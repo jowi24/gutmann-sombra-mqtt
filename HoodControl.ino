@@ -259,10 +259,11 @@ void reconnect() {
  while (!client.connected()) {
  Serial.print("Attempting MQTT connection...");
  // Attempt to connect
- if (client.connect("ESP8266 Client")) {
+ if (client.connect("ESP8266 Hood Client", "home/kitchen/hood/controller/state", 1, true, "OFFLINE")) {
   Serial.println("connected");
   // ... and subscribe to topic
-  client.subscribe("home/kitchen/hood/#");
+  client.subscribe("home/kitchen/hood/#", 1);
+  client.publish("home/kitchen/hood/controller/state", "ONLINE", true);
  } else {
   Serial.print("failed, rc=");
   Serial.print(client.state());
@@ -273,6 +274,8 @@ void reconnect() {
  }
 }
 
+unsigned long lastUptimeTransmit = 0;
+
 void loop() {
   ArduinoOTA.handle();
   
@@ -281,6 +284,13 @@ void loop() {
   }
   client.loop();
 
+  unsigned long now = millis();
+  if (now - lastUptimeTransmit > 60000) {
+    char buffer[8];
+    itoa(now/60000,buffer,10);
+    client.publish("home/kitchen/hood/uptime/state", buffer, true);
+    lastUptimeTransmit = now;
+  }
 
   // check ledStateCounters and switch state if neccessary
   for (int i=1; i<8; i++) {
@@ -297,22 +307,22 @@ void loop() {
         case 4:
           Serial.print("Update home/kitchen/hood/ventilation/state ");
           Serial.println(ledStates[1] ? "1" : (ledStates[2] ? "2" : (ledStates[3] ? "3" : (ledStates[4] ? "4" : "0"))));
-          client.publish("home/kitchen/hood/ventilation/state", ledStates[1] ? "1" : (ledStates[2] ? "2" : (ledStates[3] ? "3" : (ledStates[4] ? "4" : "0"))));
+          client.publish("home/kitchen/hood/ventilation/state", ledStates[1] ? "1" : (ledStates[2] ? "2" : (ledStates[3] ? "3" : (ledStates[4] ? "4" : "0"))), true);
         break;
         case 5:
           Serial.print("Update home/kitchen/hood/timer/state ");
           Serial.println(ledStates[5] ? "ON" : "OFF");
-          client.publish("home/kitchen/hood/timer/state", ledStates[5] ? "ON" : "OFF");
+          client.publish("home/kitchen/hood/timer/state", ledStates[5] ? "ON" : "OFF", true);
         break;
         case 6:
           Serial.print("Update home/kitchen/hood/light/state ");
           Serial.println(ledStates[6] ? "ON" : "OFF");
-          client.publish("home/kitchen/hood/light/state", ledStates[6] ? "ON" : "OFF");
+          client.publish("home/kitchen/hood/light/state", ledStates[6] ? "ON" : "OFF", true);
         break;
         case 7:
           Serial.print("Update home/kitchen/hood/maintenance/state ");
           Serial.println(ledStates[7] ? "ON" : "OFF");
-          //client.publish("home/kitchen/hood/maintenance/state", ledStates[7] ? "ON" : "OFF");
+          //client.publish("home/kitchen/hood/maintenance/state", ledStates[7] ? "ON" : "OFF", true);
         break;
       }
     }
