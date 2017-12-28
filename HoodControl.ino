@@ -173,7 +173,6 @@ ICACHE_RAM_ATTR void updateButtonState(int buttonId, int buttonPin) {
 }
 
 ICACHE_RAM_ATTR void checkLeds(int inputPin) {
-  delayMicroseconds(50);
   // LED 2/3/1/4
   int ledPin1State = digitalRead(ledPin1);
   // LED 6/7/5/-
@@ -205,14 +204,8 @@ ICACHE_RAM_ATTR void checkLeds(int inputPin) {
 
 ICACHE_RAM_ATTR void updateLedStateCounter(int ledId, int ledPinState) {
   if (ledStates[ledId] == ledPinState) {
-    if (ledId == 6) {
-      Serial.print("+");
-    }
     ledStateCounter[ledId]++;
   } else {
-    if (ledId == 6 && ledStateCounter[ledId] > 0) {
-      Serial.print("_");
-    }
     ledStateCounter[ledId] = 0;  
   }
 }
