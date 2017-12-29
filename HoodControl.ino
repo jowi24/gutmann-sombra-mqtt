@@ -5,9 +5,12 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
-const char* ssid = "MaJo";
-const char* password = "";
-const char* mqtt_server = "alarmpi";
+// local file that defines the uppercase placeholders below
+#include "config.h"
+
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
+const char* mqtt_server = MQTT_HOSTNAME;
 
 // input lines
 const int inputPin = 13; 
@@ -54,6 +57,8 @@ void setup() {
     delay(5000);
     ESP.restart();
   }
+  ArduinoOTA.setHostname("esp8266-hood-control");
+  ArduinoOTA.setPassword((const char *)OTA_PASSWORD);
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
   });
