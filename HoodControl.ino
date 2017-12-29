@@ -257,6 +257,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
       buttonStateCounter[5] = 100;
     }
  }
+ if (strcmp(topic, "home/kitchen/hood/maintenance/set") == 0) {
+   if (ledStates[7]) {
+     buttonStateCounter[7] = 1500; //~ 6sec (1500*4=6000ms)   
+   }
+ }
 }
 
 void reconnect() {
@@ -299,7 +304,9 @@ void loop() {
 
   // check ledStateCounters and switch state if neccessary
   for (int i=1; i<8; i++) {
-    if (ledStateCounter[i] > 20) {
+    if (ledStateCounter[i] >  20 && i!=7 ||
+        ledStateCounter[i] >  20 && i==7 && ledStates[7] == false ||
+        ledStateCounter[i] > 375 && i==7 && ledStates[7] == true) {
       ledStates[i] = !ledStates[i];
       ledStateCounter[i] = 0;
       Serial.print(i);
@@ -327,7 +334,7 @@ void loop() {
         case 7:
           Serial.print("Update home/kitchen/hood/maintenance/state ");
           Serial.println(ledStates[7] ? "ON" : "OFF");
-          //client.publish("home/kitchen/hood/maintenance/state", ledStates[7] ? "ON" : "OFF", true);
+          client.publish("home/kitchen/hood/maintenance/state", ledStates[7] ? "ON" : "OFF", true);
         break;
       }
     }
