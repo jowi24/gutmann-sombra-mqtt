@@ -192,7 +192,7 @@ void publishDiscovery() {
 	auto addDevice = [&](JsonDocument& doc) {
 		JsonObject dev = doc["device"].to<JsonObject>();
 		dev["identifiers"][0] = dev_id;
-		dev["name"]           = "Hood Control";
+		dev["name"]           = "Abzugshaube";
 		dev["model"]          = "DIY ESP8266";
 		dev["manufacturer"]   = "Joachim Wilke";
 		dev["sw_version"]     = FW_VERSION;
@@ -239,7 +239,7 @@ void publishDiscovery() {
 		publish("fan", "ventilation", doc);
 	}
 
-	// --- Light (switch) ---
+	// --- Light (light entity) ---
 	{
 		JsonDocument doc;
 		doc["name"]            = "Haubenlicht";
@@ -253,7 +253,7 @@ void publishDiscovery() {
 		doc["payload_not_available"] = "false";
 		doc["icon"]            = "mdi:lightbulb";
 		addDevice(doc);
-		publish("switch", "light", doc);
+		publish("light", "light", doc);
 	}
 
 	// --- Timer (switch) ---
