@@ -3,3 +3,4 @@ Release
 .DS_Store
 *.bin
 fritzing/abzugshaube_extracted/
+.vscode/
