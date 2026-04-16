@@ -213,24 +213,30 @@ void publishDiscovery() {
 		mqtt.publish(topic.c_str(), payload.c_str(), true);
 	};
 
-	// --- Ventilation (select: 0-4) ---
+	// --- Ventilation (fan mit preset modes: off/1/2/3/4) ---
 	{
 		JsonDocument doc;
-		doc["name"]            = "Lüftung";
-		doc["unique_id"]       = dev_id + "_ventilation";
-		doc["state_topic"]     = prefix + "/ventilation/state";
-		doc["command_topic"]   = prefix + "/ventilation/set";
-		doc["options"][0]      = "0";
-		doc["options"][1]      = "1";
-		doc["options"][2]      = "2";
-		doc["options"][3]      = "3";
-		doc["options"][4]      = "4";
-		doc["availability_topic"] = avail;
-		doc["payload_available"]  = "true";
-		doc["payload_not_available"] = "false";
-		doc["icon"]            = "mdi:air-filter";
+		doc["name"]                    = "Lüftung";
+		doc["unique_id"]               = dev_id + "_ventilation";
+		// State: "0" = off, "1"-"4" = preset
+		doc["state_topic"]             = prefix + "/ventilation/state";
+		doc["command_topic"]           = prefix + "/ventilation/set";
+		doc["payload_on"]              = "1";
+		doc["payload_off"]             = "0";
+		doc["state_value_template"]    = "{% if value == '0' %}off{% else %}on{% endif %}";
+		doc["preset_mode_state_topic"] = prefix + "/ventilation/state";
+		doc["preset_mode_command_topic"] = prefix + "/ventilation/set";
+		doc["preset_mode_value_template"] = "{{ value }}";
+		doc["preset_modes"][0]         = "1";
+		doc["preset_modes"][1]         = "2";
+		doc["preset_modes"][2]         = "3";
+		doc["preset_modes"][3]         = "4";
+		doc["availability_topic"]      = avail;
+		doc["payload_available"]       = "true";
+		doc["payload_not_available"]   = "false";
+		doc["icon"]                    = "mdi:air-filter";
 		addDevice(doc);
-		publish("select", "ventilation", doc);
+		publish("fan", "ventilation", doc);
 	}
 
 	// --- Light (switch) ---
@@ -337,8 +343,21 @@ void setup() {
 	wm.autoConnect(FW_NAME "-Setup");
 	Serial.println("WiFi connected");
 
-	// OTA
+	// OTA - Timer während Upload pausieren, sonst blockiert der ISR den Transfer
 	ArduinoOTA.setHostname(device_name);
+	ArduinoOTA.onStart([]() {
+		timer1_detachInterrupt();
+		timer1_disable();
+		Serial.println("OTA start - timer stopped");
+	});
+	ArduinoOTA.onError([](ota_error_t error) {
+		// Timer nach Fehler wieder aktivieren
+		timer1_isr_init();
+		timer1_attachInterrupt(IsrTimer);
+		timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
+		timer1_write((clockCyclesPerMicrosecond() / 16) * 100);
+		Serial.printf("OTA error[%u]\n", error);
+	});
 	ArduinoOTA.begin();
 
 	// MQTT
