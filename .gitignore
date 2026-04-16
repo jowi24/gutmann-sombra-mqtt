@@ -1,1 +1,5 @@
 Release
+.pio/
+.DS_Store
+*.bin
+fritzing/abzugshaube_extracted/
