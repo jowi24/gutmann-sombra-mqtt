@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 
 #define FW_NAME    "HoodControl"
-#define FW_VERSION "0.0.5"
+#define FW_VERSION "0.0.6"
 
 // Pins
 const int inputPin   = 13; // D7
@@ -343,6 +343,11 @@ void setup() {
 	wm.autoConnect(FW_NAME "-Setup");
 	Serial.println("WiFi connected");
 
+	// WiFi Robustheit bei stabiler Stromversorgung optimieren
+	WiFi.setAutoReconnect(true);           // Auto-Reconnect bei Verbindungsverlust
+	WiFi.setOutputPower(20.5f);            // Maximale TX-Power (0..20.5 dBm) für besseres Signal
+	WiFi.setSleepMode(WIFI_NONE_SLEEP);    // Sleep-Modi deaktivieren
+
 	// OTA - Timer während Upload pausieren, sonst blockiert der ISR den Transfer
 	ArduinoOTA.setHostname(device_name);
 	ArduinoOTA.onStart([]() {
@@ -387,15 +392,29 @@ void setup() {
 // ---- Loop ----
 
 unsigned long lastMqttAttempt = 0;
+unsigned long lastWifiCheck = 0;
 
 void loop() {
 	ArduinoOTA.handle();
 
+	// WiFi Überwachung: aktiv reconnecten bei Verbindungsverlust
+	unsigned long now = millis();
+	if (now - lastWifiCheck > 10000) {  // alle 10s prüfen
+		lastWifiCheck = now;
+		if (WiFi.status() != WL_CONNECTED) {
+			Serial.printf("WiFi lost (status=%d), reconnecting...\n", WiFi.status());
+			WiFi.reconnect();
+		}
+	}
+
 	if (!mqtt.connected()) {
-		unsigned long now = millis();
 		if (now - lastMqttAttempt > 5000) {
 			lastMqttAttempt = now;
-			mqttReconnect();
+			if (WiFi.status() == WL_CONNECTED) {
+				mqttReconnect();
+			} else {
+				Serial.println("WiFi not connected, skipping MQTT");
+			}
 		}
 	} else {
 		mqtt.loop();
