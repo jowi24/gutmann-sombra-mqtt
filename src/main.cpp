@@ -7,7 +7,20 @@
 #include <ArduinoJson.h>
 
 #define FW_NAME    "HoodControl"
-#define FW_VERSION "0.0.6"
+#define FW_VERSION "0.0.7"
+
+const char* const CONFIG_PORTAL_SSID     = FW_NAME "-Setup";
+const char* const CONFIG_PORTAL_PASSWORD = "REMOVED";
+const unsigned long WIFI_RETRY_INTERVAL  = 10000;
+const unsigned long PORTAL_RETRY_INTERVAL = 30000;
+const unsigned long PORTAL_START_DELAY   = 20000;
+const unsigned long PORTAL_CLOSE_DELAY   = 60000;
+const unsigned long DIAGNOSTICS_INTERVAL = 60000;
+const unsigned long STATE_RETRY_INTERVAL = 5000;
+const unsigned long MQTT_RETRY_MIN       = 5000;
+const unsigned long MQTT_RETRY_MAX       = 300000;
+const size_t EVENT_LOG_SIZE              = 16;
+const size_t EVENT_LENGTH                 = 80;
 
 // Pins
 const int inputPin   = 13; // D7
@@ -32,6 +45,34 @@ volatile unsigned long phaseCounter = 0;
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
+WiFiManager  wifiManager;
+
+WiFiManagerParameter p_host  ("mqtt_host",   "MQTT Host",   mqtt_host,   64);
+WiFiManagerParameter p_port  ("mqtt_port",   "MQTT Port",   mqtt_port,    6);
+WiFiManagerParameter p_prefix("mqtt_prefix", "MQTT Prefix", mqtt_prefix, 64);
+WiFiManagerParameter p_name  ("device_name", "Device Name", device_name, 32);
+
+char mqttClientId[48];
+char previousBootStage[32] = "unknown";
+char lastError[80] = "none";
+char eventLog[EVENT_LOG_SIZE][EVENT_LENGTH];
+size_t eventLogStart = 0;
+size_t eventLogCount = 0;
+unsigned long wifiReconnects = 0;
+unsigned long mqttReconnects = 0;
+unsigned long mqttFailures = 0;
+unsigned long mqttRetryInterval = MQTT_RETRY_MIN;
+unsigned long disconnectedSince = 0;
+unsigned long wifiConnectedSince = 0;
+unsigned long lastWifiAttempt = 0;
+unsigned long lastMqttAttempt = 0;
+unsigned long lastDiagnostics = 0;
+unsigned long lastStateAttempt = 0;
+unsigned long configSavedAt = 0;
+bool wasWifiConnected = false;
+bool wasMqttConnected = false;
+bool stateSyncPending = true;
+bool discoveryPending = true;
 
 // Forward declarations
 void checkButtons(int line);
@@ -39,7 +80,16 @@ void updateButtonState(int buttonId, int buttonPin);
 void checkLeds(int line);
 void updateLedStateCounter(int ledId, int ledPinState);
 void mqttReconnect();
-void publishState(int i);
+bool publishState(int i);
+bool publishAllStates();
+bool publishDiagnostics();
+void publishEventLog();
+void processNetwork();
+void startConfigPortal();
+void addEvent(const char* message);
+void setLastError(const char* message);
+void loadPreviousBootStage();
+void recordBootStage(const char* stage);
 void saveConfig();
 void loadConfig();
 
@@ -119,21 +169,66 @@ void saveConfig() {
 	doc["mqtt_prefix"] = mqtt_prefix;
 	doc["device_name"] = device_name;
 	File f = LittleFS.open("/config.json", "w");
-	if (f) { serializeJson(doc, f); f.close(); }
+	if (!f) {
+		setLastError("Unable to open config.json for writing");
+		return;
+	}
+	if (serializeJson(doc, f) == 0) setLastError("Unable to write config.json");
+	f.close();
 }
 
 void loadConfig() {
 	if (!LittleFS.exists("/config.json")) return;
 	File f = LittleFS.open("/config.json", "r");
-	if (!f) return;
+	if (!f) {
+		setLastError("Unable to open config.json");
+		return;
+	}
 	JsonDocument doc;
 	if (deserializeJson(doc, f) == DeserializationError::Ok) {
 		strlcpy(mqtt_host,   doc["mqtt_host"]   | mqtt_host,   sizeof(mqtt_host));
 		strlcpy(mqtt_port,   doc["mqtt_port"]   | mqtt_port,   sizeof(mqtt_port));
 		strlcpy(mqtt_prefix, doc["mqtt_prefix"] | mqtt_prefix, sizeof(mqtt_prefix));
 		strlcpy(device_name, doc["device_name"] | device_name, sizeof(device_name));
-	}
+	} else setLastError("Invalid config.json");
 	f.close();
+}
+
+void loadPreviousBootStage() {
+	if (!LittleFS.exists("/boot-stage.txt")) return;
+	File f = LittleFS.open("/boot-stage.txt", "r");
+	if (!f) return;
+	size_t length = f.readBytes(previousBootStage, sizeof(previousBootStage) - 1);
+	previousBootStage[length] = '\0';
+	f.close();
+}
+
+void recordBootStage(const char* stage) {
+	File f = LittleFS.open("/boot-stage.txt", "w");
+	if (!f) {
+		setLastError("Unable to persist boot stage");
+		return;
+	}
+	f.print(stage);
+	f.close();
+}
+
+void setLastError(const char* message) {
+	strlcpy(lastError, message, sizeof(lastError));
+	Serial.printf("ERROR: %s\n", lastError);
+	addEvent(lastError);
+}
+
+void addEvent(const char* message) {
+	size_t index = (eventLogStart + eventLogCount) % EVENT_LOG_SIZE;
+	if (eventLogCount == EVENT_LOG_SIZE) {
+		eventLogStart = (eventLogStart + 1) % EVENT_LOG_SIZE;
+		index = (eventLogStart + eventLogCount - 1) % EVENT_LOG_SIZE;
+	} else {
+		eventLogCount++;
+	}
+	snprintf(eventLog[index], EVENT_LENGTH, "%lus: %s", millis() / 1000, message);
+	Serial.println(eventLog[index]);
 }
 
 // ---- MQTT ----
@@ -159,29 +254,45 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 	}
 }
 
-void publishState(int i) {
-	if (!mqtt.connected()) return;
+bool publishState(int i) {
+	if (!mqtt.connected()) {
+		stateSyncPending = true;
+		return false;
+	}
 	String prefix = String(mqtt_prefix);
+	bool published = false;
 	switch (i) {
 	case 1: case 2: case 3: case 4: {
 		String v = ledStates[1] ? "1" : ledStates[2] ? "2" : ledStates[3] ? "3" : ledStates[4] ? "4" : "0";
-		mqtt.publish((prefix + "/ventilation/state").c_str(), v.c_str(), true);
+		published = mqtt.publish((prefix + "/ventilation/state").c_str(), v.c_str(), true);
 		Serial.printf("ventilation: %s\n", v.c_str());
 		break;
 	}
 	case 5:
-		mqtt.publish((prefix + "/timer/state").c_str(),       ledStates[5] ? "true" : "false", true);
+		published = mqtt.publish((prefix + "/timer/state").c_str(), ledStates[5] ? "true" : "false", true);
 		Serial.printf("timer: %s\n", ledStates[5] ? "true" : "false");
 		break;
 	case 6:
-		mqtt.publish((prefix + "/light/state").c_str(),       ledStates[6] ? "true" : "false", true);
+		published = mqtt.publish((prefix + "/light/state").c_str(), ledStates[6] ? "true" : "false", true);
 		Serial.printf("light: %s\n", ledStates[6] ? "true" : "false");
 		break;
 	case 7:
-		mqtt.publish((prefix + "/maintenance/state").c_str(), ledStates[7] ? "true" : "false", true);
+		published = mqtt.publish((prefix + "/maintenance/state").c_str(), ledStates[7] ? "true" : "false", true);
 		Serial.printf("maintenance: %s\n", ledStates[7] ? "true" : "false");
 		break;
 	}
+	if (!published) {
+		stateSyncPending = true;
+		setLastError("MQTT state publish failed");
+	}
+	return published;
+}
+
+bool publishAllStates() {
+	bool success = publishState(1);
+	for (int i = 5; i <= 7; i++) success = publishState(i) && success;
+	stateSyncPending = !success;
+	return success;
 }
 
 void publishDiscovery() {
@@ -202,6 +313,7 @@ void publishDiscovery() {
 	String avail = prefix + "/$online";
 
 	// Helper: publish one discovery config
+	bool success = true;
 	auto publish = [&](const char* component, const char* obj_id, JsonDocument& doc) {
 		String topic = "homeassistant/";
 		topic += component;
@@ -210,7 +322,7 @@ void publishDiscovery() {
 		topic += "/config";
 		String payload;
 		serializeJson(doc, payload);
-		mqtt.publish(topic.c_str(), payload.c_str(), true);
+		success = mqtt.publish(topic.c_str(), payload.c_str(), true) && success;
 	};
 
 	// --- Ventilation (fan mit preset modes: off/1/2/3/4) ---
@@ -290,17 +402,135 @@ void publishDiscovery() {
 		publish("binary_sensor", "maintenance", doc);
 	}
 
-	Serial.println("HA discovery published");
+	discoveryPending = !success;
+	if (success) Serial.println("HA discovery published");
+	else setLastError("HA discovery publish failed");
 }
 
 void mqttReconnect() {
 	String will = String(mqtt_prefix) + "/$online";
-	if (mqtt.connect(device_name, will.c_str(), 1, true, "false")) {
-		mqtt.publish(will.c_str(), "true", true);
-		mqtt.subscribe((String(mqtt_prefix) + "/+/set").c_str());
-		mqtt.setBufferSize(1024);
-		publishDiscovery();
-		Serial.println("MQTT connected");
+	if (mqtt.connect(mqttClientId, will.c_str(), 1, true, "false")) {
+		bool onlinePublished = mqtt.publish(will.c_str(), "true", true);
+		bool subscribed = mqtt.subscribe((String(mqtt_prefix) + "/+/set").c_str(), 1);
+		if (!onlinePublished || !subscribed) {
+			mqttFailures++;
+			setLastError("MQTT initialization publish/subscribe failed");
+			mqtt.disconnect();
+			mqttRetryInterval = min(mqttRetryInterval * 2, MQTT_RETRY_MAX);
+			return;
+		}
+		mqttReconnects++;
+		mqttRetryInterval = MQTT_RETRY_MIN;
+		stateSyncPending = true;
+		discoveryPending = true;
+		lastDiagnostics = millis() - DIAGNOSTICS_INTERVAL;
+		addEvent("MQTT connected");
+		Serial.printf("MQTT connected as %s\n", mqttClientId);
+	} else {
+		mqttFailures++;
+		snprintf(lastError, sizeof(lastError), "MQTT connect failed, state=%d", mqtt.state());
+		addEvent(lastError);
+		mqttRetryInterval = min(mqttRetryInterval * 2, MQTT_RETRY_MAX);
+	}
+}
+
+bool publishDiagnostics() {
+	if (!mqtt.connected()) return false;
+	JsonDocument doc;
+	doc["firmware"] = FW_VERSION;
+	doc["uptime_s"] = millis() / 1000;
+	doc["rssi"] = WiFi.RSSI();
+	doc["wifi_status"] = WiFi.status();
+	doc["ip"] = WiFi.localIP().toString();
+	doc["mqtt_state"] = mqtt.state();
+	doc["wifi_reconnects"] = wifiReconnects;
+	doc["mqtt_reconnects"] = mqttReconnects;
+	doc["mqtt_failures"] = mqttFailures;
+	doc["free_heap"] = ESP.getFreeHeap();
+	doc["reset_reason"] = ESP.getResetReason();
+	doc["previous_boot_stage"] = previousBootStage;
+	doc["last_error"] = lastError;
+	doc["portal_active"] = wifiManager.getConfigPortalActive();
+	String payload;
+	serializeJson(doc, payload);
+	String prefix = String(mqtt_prefix);
+	String uptime = String(millis() / 1000);
+	String rssi = String(WiFi.RSSI());
+	String ip = WiFi.localIP().toString();
+	String resetReason = ESP.getResetReason();
+	bool success = mqtt.publish((prefix + "/diagnostics").c_str(), payload.c_str(), true);
+	success = mqtt.publish((prefix + "/$wifi_rssi").c_str(), rssi.c_str(), true) && success;
+	success = mqtt.publish((prefix + "/$uptime").c_str(), uptime.c_str(), true) && success;
+	success = mqtt.publish((prefix + "/$reset_reason").c_str(), resetReason.c_str(), true) && success;
+	success = mqtt.publish((prefix + "/$firmware").c_str(), FW_VERSION, true) && success;
+	success = mqtt.publish((prefix + "/$ip").c_str(), ip.c_str(), true) && success;
+	success = mqtt.publish((prefix + "/$last_error").c_str(), lastError, true) && success;
+	if (!success) setLastError("MQTT diagnostics publish failed");
+	return success;
+}
+
+void publishEventLog() {
+	while (mqtt.connected() && eventLogCount > 0) {
+		if (!mqtt.publish((String(mqtt_prefix) + "/events").c_str(),
+				eventLog[eventLogStart], false)) {
+			setLastError("MQTT event publish failed");
+			return;
+		}
+		eventLogStart = (eventLogStart + 1) % EVENT_LOG_SIZE;
+		eventLogCount--;
+	}
+}
+
+void startConfigPortal() {
+	if (wifiManager.getConfigPortalActive()) return;
+	addEvent("Starting protected config portal at 192.168.4.1");
+	wifiManager.startConfigPortal(CONFIG_PORTAL_SSID, CONFIG_PORTAL_PASSWORD);
+
+	// WiFiManager disables STA when it starts a portal without a connection.
+	WiFi.mode(WIFI_AP_STA);
+	WiFi.begin();
+	lastWifiAttempt = millis();
+}
+
+void processNetwork() {
+	unsigned long now = millis();
+	bool connected = WiFi.status() == WL_CONNECTED;
+
+	if (connected && !wasWifiConnected) {
+		wifiConnectedSince = now;
+		disconnectedSince = 0;
+		mqttRetryInterval = MQTT_RETRY_MIN;
+		lastMqttAttempt = now - MQTT_RETRY_MIN;
+		addEvent("WiFi connected");
+		Serial.printf("IP=%s RSSI=%d\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
+		ArduinoOTA.setHostname(device_name);
+		ArduinoOTA.begin();
+	} else if (!connected && wasWifiConnected) {
+		wifiReconnects++;
+		disconnectedSince = now;
+		snprintf(lastError, sizeof(lastError), "WiFi disconnected, status=%d", WiFi.status());
+		addEvent(lastError);
+	}
+	wasWifiConnected = connected;
+
+	if (wifiManager.getConfigPortalActive()) wifiManager.process();
+
+	if (!connected) {
+		if (disconnectedSince == 0) disconnectedSince = now;
+		unsigned long retryInterval = wifiManager.getConfigPortalActive()
+			? PORTAL_RETRY_INTERVAL : WIFI_RETRY_INTERVAL;
+		if (now - lastWifiAttempt >= retryInterval) {
+			lastWifiAttempt = now;
+			WiFi.mode(wifiManager.getConfigPortalActive() ? WIFI_AP_STA : WIFI_STA);
+			WiFi.begin();
+			addEvent("WiFi reconnect requested");
+		}
+		if (now - disconnectedSince >= PORTAL_START_DELAY) startConfigPortal();
+	} else if (wifiManager.getConfigPortalActive()
+			&& now - wifiConnectedSince >= PORTAL_CLOSE_DELAY) {
+		wifiManager.stopConfigPortal();
+		WiFi.mode(WIFI_STA);
+		addEvent("Config portal stopped");
 	}
 }
 
@@ -310,43 +540,55 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("\n\n" FW_NAME " v" FW_VERSION);
 
-	LittleFS.begin();
+	if (!LittleFS.begin()) Serial.println("ERROR: LittleFS mount failed");
+	loadPreviousBootStage();
+	recordBootStage("setup");
 	loadConfig();
+	Serial.printf("Reset reason: %s; previous boot stage: %s\n",
+		ESP.getResetReason().c_str(), previousBootStage);
 
 	// Halten des Flash-Buttons (GPIO0) beim Start setzt WiFi-Config zurück
 	pinMode(0, INPUT_PULLUP);
 	if (digitalRead(0) == LOW) {
-		WiFiManager wm;
-		wm.resetSettings();
+		wifiManager.resetSettings();
 		LittleFS.remove("/config.json");
 		Serial.println("WiFi + MQTT config reset!");
 	}
 
-	WiFiManager wm;
-	WiFiManagerParameter p_host  ("mqtt_host",   "MQTT Host",   mqtt_host,   64);
-	WiFiManagerParameter p_port  ("mqtt_port",   "MQTT Port",   mqtt_port,    6);
-	WiFiManagerParameter p_prefix("mqtt_prefix", "MQTT Prefix", mqtt_prefix, 64);
-	WiFiManagerParameter p_name  ("device_name", "Device Name", device_name, 32);
-	wm.addParameter(&p_host);
-	wm.addParameter(&p_port);
-	wm.addParameter(&p_prefix);
-	wm.addParameter(&p_name);
-	wm.setSaveParamsCallback([&]() {
+	p_host.setValue(mqtt_host, sizeof(mqtt_host));
+	p_port.setValue(mqtt_port, sizeof(mqtt_port));
+	p_prefix.setValue(mqtt_prefix, sizeof(mqtt_prefix));
+	p_name.setValue(device_name, sizeof(device_name));
+	wifiManager.addParameter(&p_host);
+	wifiManager.addParameter(&p_port);
+	wifiManager.addParameter(&p_prefix);
+	wifiManager.addParameter(&p_name);
+	wifiManager.setSaveParamsCallback([]() {
 		strlcpy(mqtt_host,   p_host.getValue(),   sizeof(mqtt_host));
 		strlcpy(mqtt_port,   p_port.getValue(),   sizeof(mqtt_port));
 		strlcpy(mqtt_prefix, p_prefix.getValue(), sizeof(mqtt_prefix));
 		strlcpy(device_name, p_name.getValue(),   sizeof(device_name));
 		saveConfig();
+		configSavedAt = millis();
+		addEvent("Configuration saved; restart scheduled");
 	});
-
-	// Blockiert bis WiFi verbunden (oder Konfigurationsportal abgeschlossen)
-	wm.autoConnect(FW_NAME "-Setup");
-	Serial.println("WiFi connected");
+	wifiManager.setConfigPortalBlocking(false);
+	wifiManager.setConnectTimeout(10);
+	wifiManager.setSaveConnectTimeout(10);
+	wifiManager.setWiFiAutoReconnect(true);
+	wifiManager.setHostname(device_name);
 
 	// WiFi Robustheit bei stabiler Stromversorgung optimieren
-	WiFi.setAutoReconnect(true);           // Auto-Reconnect bei Verbindungsverlust
-	WiFi.setOutputPower(20.5f);            // Maximale TX-Power (0..20.5 dBm) für besseres Signal
-	WiFi.setSleepMode(WIFI_NONE_SLEEP);    // Sleep-Modi deaktivieren
+	WiFi.setAutoReconnect(true);
+	WiFi.setOutputPower(20.5f);
+	WiFi.setSleepMode(WIFI_NONE_SLEEP);
+	WiFi.mode(WIFI_STA);
+	WiFi.begin();
+	disconnectedSince = millis();
+	lastWifiAttempt = millis();
+	snprintf(mqttClientId, sizeof(mqttClientId), "%s-%06x",
+		device_name, ESP.getChipId());
+	addEvent("WiFi connection started");
 
 	// OTA - Timer während Upload pausieren, sonst blockiert der ISR den Transfer
 	ArduinoOTA.setHostname(device_name);
@@ -363,12 +605,12 @@ void setup() {
 		timer1_write((clockCyclesPerMicrosecond() / 16) * 100);
 		Serial.printf("OTA error[%u]\n", error);
 	});
-	ArduinoOTA.begin();
-
 	// MQTT
 	mqtt.setServer(mqtt_host, atoi(mqtt_port));
 	mqtt.setCallback(mqttCallback);
 	mqtt.setBufferSize(1024);
+	mqtt.setKeepAlive(15);
+	mqtt.setSocketTimeout(3);
 
 	// Pins initialisieren
 	resync = 0;
@@ -387,37 +629,48 @@ void setup() {
 
 	timer1_isr_init();
 	timer1_attachInterrupt(IsrTimer);
+	recordBootStage("running");
 }
 
 // ---- Loop ----
 
-unsigned long lastMqttAttempt = 0;
-unsigned long lastWifiCheck = 0;
-
 void loop() {
 	ArduinoOTA.handle();
+	processNetwork();
 
-	// WiFi Überwachung: aktiv reconnecten bei Verbindungsverlust
 	unsigned long now = millis();
-	if (now - lastWifiCheck > 10000) {  // alle 10s prüfen
-		lastWifiCheck = now;
-		if (WiFi.status() != WL_CONNECTED) {
-			Serial.printf("WiFi lost (status=%d), reconnecting...\n", WiFi.status());
-			WiFi.reconnect();
-		}
-	}
-
 	if (!mqtt.connected()) {
-		if (now - lastMqttAttempt > 5000) {
+		if (wasMqttConnected) {
+			snprintf(lastError, sizeof(lastError), "MQTT disconnected, state=%d", mqtt.state());
+			addEvent(lastError);
+		}
+		if (WiFi.status() == WL_CONNECTED
+				&& now - lastMqttAttempt >= mqttRetryInterval) {
 			lastMqttAttempt = now;
-			if (WiFi.status() == WL_CONNECTED) {
-				mqttReconnect();
-			} else {
-				Serial.println("WiFi not connected, skipping MQTT");
-			}
+			mqttReconnect();
 		}
 	} else {
-		mqtt.loop();
+		if (!mqtt.loop()) {
+			snprintf(lastError, sizeof(lastError), "MQTT loop failed, state=%d", mqtt.state());
+			addEvent(lastError);
+		}
+		if ((stateSyncPending || discoveryPending)
+				&& now - lastStateAttempt >= STATE_RETRY_INTERVAL) {
+			lastStateAttempt = now;
+			if (discoveryPending) publishDiscovery();
+			if (stateSyncPending) publishAllStates();
+		}
+		if (now - lastDiagnostics >= DIAGNOSTICS_INTERVAL) {
+			lastDiagnostics = now;
+			publishDiagnostics();
+		}
+		publishEventLog();
+	}
+	wasMqttConnected = mqtt.connected();
+
+	if (configSavedAt != 0 && now - configSavedAt >= 2000) {
+		recordBootStage("config-restart");
+		ESP.restart();
 	}
 
 	for (int i = 1; i < 8; i++) {

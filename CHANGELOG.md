@@ -1,0 +1,64 @@
+# Changelog
+
+Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
+festgehalten.
+
+## 0.0.7 - 2026-08-16
+
+### Hinzugefügt
+
+- Nicht blockierender WLAN-Start mit paralleler Haubensteuerung.
+- Geschützter Fallback-Hotspot `HoodControl-Setup`.
+- Konfigurationsportal unter `http://192.168.4.1`.
+- Regelmäßige WLAN-Wiederverbindungsversuche im AP+STA-Betrieb.
+- Eindeutige MQTT-Client-ID aus Gerätename und ESP8266-Chip-ID.
+- MQTT-Diagnose unter `diagnostics`, `$wifi_rssi`, `$uptime`,
+  `$reset_reason`, `$firmware`, `$ip` und `$last_error`.
+- Gepufferte Verbindungsereignisse unter dem MQTT-Topic `events`.
+- Persistente Bootphase zur Diagnose unvollständiger Startvorgänge.
+- WLAN-, MQTT- und Fehlerzähler.
+- Vollständige Neuübertragung aller Haubenzustände nach MQTT-Reconnect.
+
+### Geändert
+
+- MQTT-Wiederverbindungen verwenden exponentielles Backoff bis fünf Minuten.
+- MQTT-Sockettimeout wurde auf drei Sekunden reduziert.
+- MQTT-Befehle werden mit QoS 1 abonniert.
+- Der Fallback-Hotspot wird nach einer Minute stabiler WLAN-Verbindung
+  abgeschaltet.
+- Konfigurationsänderungen führen nach erfolgreichem Speichern zu einem
+  kontrollierten Neustart.
+- Fehler beim Lesen oder Schreiben der Konfiguration sowie beim Publizieren
+  und Abonnieren werden sichtbar protokolliert.
+
+### Behoben
+
+- Ein fehlgeschlagener WLAN-Start kann die Firmware nicht mehr dauerhaft im
+  blockierenden WiFiManager-Portal festsetzen.
+- Zustandsänderungen während einer MQTT-Unterbrechung werden nach dem
+  Wiederverbinden erneut synchronisiert.
+- Eine feste MQTT-Client-ID kann nicht mehr mit einer zweiten gleichnamigen
+  Installation kollidieren.
+
+### Validierung
+
+- Erfolgreicher Build für `nodemcuv2` und `nodemcuv2-ota`.
+- RAM: 35.892 von 81.920 Bytes (43,8 %).
+- Flash: 433.608 von 1.044.464 Bytes (41,5 %).
+- Firmware erfolgreich per USB geschrieben und anhand des Flash-Hashes
+  verifiziert.
+
+## 0.0.6 - 2026-07-14
+
+- WLAN-Auto-Reconnect aktiviert.
+- Maximale WLAN-Sendeleistung eingestellt.
+- WLAN-Schlafmodus deaktiviert.
+- Aktive WLAN-Prüfung und MQTT-Verbindungsversuche nur bei bestehender
+  WLAN-Verbindung ergänzt.
+
+## 0.0.5
+
+- Firmware zu PlatformIO migriert.
+- Homie durch WiFiManager und PubSubClient ersetzt.
+- Home-Assistant-MQTT-Discovery ergänzt.
+- Lüfter-Presets, Licht-Entity und OTA-Unterstützung ergänzt.
