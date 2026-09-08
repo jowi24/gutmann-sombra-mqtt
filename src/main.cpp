@@ -23,11 +23,12 @@ const size_t EVENT_LOG_SIZE              = 16;
 const size_t EVENT_LENGTH                 = 80;
 
 // Pins
-const int inputPin   = 13; // D7
-const int buttonPin1 = 12; // D6
-const int buttonPin2 = 14; // D5
-const int ledPin1    =  5; // D1
-const int ledPin2    =  4; // D2
+const int inputPin    = 13; // D7
+const int buttonPin1  = 12; // D6
+const int buttonPin2  = 14; // D5
+const int ledPin1     =  5; // D1
+const int ledPin2     =  4; // D2
+const int statusLedPin =  2; // D4, onboard blue LED (ESP-12), active LOW
 
 // MQTT config (defaults, overridden by stored config)
 char mqtt_host[64]   = "mqtt.local";
@@ -92,6 +93,8 @@ void loadPreviousBootStage();
 void recordBootStage(const char* stage);
 void saveConfig();
 void loadConfig();
+void setStatusLed(bool on);
+void updateStatusLed();
 
 // ---- ISR functions (unchanged) ----
 
@@ -211,6 +214,39 @@ void recordBootStage(const char* stage) {
 	}
 	f.print(stage);
 	f.close();
+}
+
+// ---- Status LED (onboard blue LED, GPIO2/D4, active LOW) ----
+//
+// Blink pattern shows what boot/connection stage we're in; once WiFi+MQTT
+// are both up it goes mostly dark with a brief periodic "heartbeat" blip
+// so a glance confirms the device is alive without being distracting.
+
+void setStatusLed(bool on) {
+	digitalWrite(statusLedPin, on ? LOW : HIGH);
+}
+
+void updateStatusLed() {
+	unsigned long onMs, offMs;
+
+	if (wifiManager.getConfigPortalActive()) {
+		onMs = 1000; offMs = 1000;               // slow blink: waiting for setup
+	} else if (WiFi.status() != WL_CONNECTED) {
+		onMs = 150;  offMs = 150;                 // fast blink: connecting to WiFi
+	} else if (!mqtt.connected()) {
+		onMs = 400;  offMs = 400;                 // medium blink: connecting to MQTT
+	} else {
+		onMs = 40;   offMs = 2960;                // heartbeat: everything is fine
+	}
+
+	static bool ledOn = false;
+	static unsigned long lastToggle = 0;
+	unsigned long now = millis();
+	if (now - lastToggle >= (ledOn ? onMs : offMs)) {
+		ledOn = !ledOn;
+		lastToggle = now;
+		setStatusLed(ledOn);
+	}
 }
 
 void setLastError(const char* message) {
@@ -540,6 +576,16 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("\n\n" FW_NAME " v" FW_VERSION);
 
+	// Status LED: three quick blips to mark power-on / start of setup()
+	pinMode(statusLedPin, OUTPUT);
+	setStatusLed(false);
+	for (int i = 0; i < 3; i++) {
+		setStatusLed(true);
+		delay(80);
+		setStatusLed(false);
+		delay(80);
+	}
+
 	if (!LittleFS.begin()) Serial.println("ERROR: LittleFS mount failed");
 	loadPreviousBootStage();
 	recordBootStage("setup");
@@ -637,6 +683,7 @@ void setup() {
 void loop() {
 	ArduinoOTA.handle();
 	processNetwork();
+	updateStatusLed();
 
 	unsigned long now = millis();
 	if (!mqtt.connected()) {
