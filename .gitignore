@@ -4,3 +4,23 @@ Release
 *.bin
 fritzing/abzugshaube_extracted/
 .vscode/
+
+# --- KiCad ---
+# Auto-Snapshots: gross, generiert, enthalten eigene .git-Repos
+.history/
+.mcp-backups/
+*-backups/
+fp-info-cache
+# lokale Benutzereinstellungen, Autosaves, Sperrdateien
+*.kicad_prl
+_autosave-*
+*.lck
+# KiCads eigene Sicherungskopien
+*.kicad_pcb.bak
+*.kicad_sch.bak
+*.kicad_pro.bak*
+# generierte Reports
+*_drc_violations.json
+# Wegwerf-Testprojekte aus dem MCP-Debugging
+kicad/test/
+kicad/test-junction/
