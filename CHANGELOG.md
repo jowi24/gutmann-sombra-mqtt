@@ -3,6 +3,17 @@
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
+## 0.0.8 - 2026-09-08
+
+### Hinzugefügt
+
+- Status-LED auf GPIO2 (D4, blaue Onboard-LED des ESP-12, aktiv LOW).
+  Das Blinkmuster zeigt die Boot- und Verbindungsphase ohne serielle
+  Konsole an: drei kurze Blitze beim Einschalten, schnelles Blinken
+  während der WLAN-Anmeldung, mittleres Blinken beim MQTT-Verbinden,
+  langsames Blinken bei geöffnetem Konfigurationsportal und ein kurzer
+  Heartbeat alle drei Sekunden, sobald beides steht.
+
 ## 0.0.7 - 2026-08-16
 
 ### Hinzugefügt
