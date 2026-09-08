@@ -42,7 +42,7 @@ Blattformat der Schematic: **A5** (420 × 297 mm).
 | SW1 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Reset (RST → GND) |
 | SW2 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Flash-Mode (GPIO0 → GND) |
 | J1 | Pfostenleiste 1×8, 2,54 mm | "Hoodcontrol" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | Anschluss Haubenelektronik |
-| J2 | Pfostenleiste 1×6, 2,54 mm | FTDI-Header | `Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical` | DTR, TXO, RXI, VCC, n.c., GND |
+| J2 | Pfostenleiste 1×6, 2,54 mm | FTDI-Header | `Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical` | DTR, RXI, TXO, VCC, n.c., GND |
 | J3 | Pfostenleiste 1×8, 2,54 mm | "Frontpanel" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | Anschluss Frontpanel |
 | J4 | Pfostenleiste 1×2, 2,54 mm | "Reset" | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | externer Reset-Taster (RST → GND) |
 | J5 | Pfostenleiste 1×3, 2,54 mm | "Flash/Run" | `Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical` | Jumper: 1–2 = Run, 2–3 = Flash |
