@@ -9852,7 +9852,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+		(property "Footprint" "hood-control:TPS63802_Module_25.8x13.0mm"
 			(at 106.68 100.33 0)
 			(hide yes)
 			(show_name no)
@@ -9865,7 +9865,7 @@
 				(justify left)
 			)
 		)
-		(property "Datasheet" "https://power.murata.com/data/power/oki-78sr.pdf"
+		(property "Datasheet" "https://www.ti.com/lit/ds/symlink/tps63802.pdf"
 			(at 105.41 93.98 0)
 			(hide yes)
 			(show_name no)
@@ -9876,7 +9876,7 @@
 				)
 			)
 		)
-		(property "Description" "1.0A Step-Down DC/DC-Regulator, 15-36V input, 12V fixed Output Voltage, LM78xx replacement, -40°C to +85°C, OKI-78SR_Vertical"
+		(property "Description" "TPS63802 buck-boost converter module, 1.5-5.5 V in, 3.3 V out, 25.8 x 13.0 mm"
 			(at 105.41 93.98 0)
 			(hide yes)
 			(show_name no)

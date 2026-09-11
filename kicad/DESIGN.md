@@ -27,7 +27,7 @@ Blattformat der Schematic: **A5** (420 × 297 mm).
 | U1 | ESP-12E/F | ESP8266 Modul (SMD) | `RF_Module:ESP-12E` | Microcontroller |
 | U2 | CD4050BE / HEF4050BP / 74HC4050N | Hex-Buffer, **16-pol. DIP** | `Package_DIP:DIP-16_W7.62mm_Socket` | Pegelwandlung 5V→3,3V (Lesen: Scan-Bus, Haube-J7/J8) |
 | U3 | **74HCT08** (z.B. SN74HCT08N) | Quad-AND, 14-pol. DIP | `Package_DIP:DIP-14_W7.62mm_Socket` | Pegelwandlung 3,3V→5V (Treiben: Haube-J5/J6) |
-| U4 | **TPS63802-Buck-Boost-Modul** (eBay, PCB-Tronic24) | 1,5–5,5 V → 3,3 V, 2,7 A | *Platzhalter* `PinHeader_1x03_P2.54mm_Vertical`, echter Footprint folgt | Stromversorgung (Ersatz für den 2017er Mini-Wandler) |
+| U4 | **TPS63802-Buck-Boost-Modul** (eBay, PCB-Tronic24) | 1,5–5,5 V → 3,3 V, 2,7 A | `hood-control:TPS63802_Module_25.8x13.0mm` (projekteigene Bibliothek) | Stromversorgung (Ersatz für den 2017er Mini-Wandler) |
 | U5 (optional) | Supervisor/Reset-IC MCP130-315 | TO-92 | `Package_TO_SOT_THT:TO-92_Inline` | sauberer Power-on-Reset, verhindert Brownout-Boot-Loops |
 | R2 | 10 kΩ | 0207 bedrahtet | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | Pull-up GPIO0 → 3,3V, über Board-J5 Pin 1 |
 | R3 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-down GPIO15 → GND |
@@ -68,8 +68,8 @@ Bestückt wird ein **TPS63802-Buck-Boost-Modul** (eBay, Händler PCB-Tronic24,
 | IC | TPS63802 (Texas Instruments) |
 | Eingang | **1,5 – 5,5 V** (Anlauf ab 1,8 V) |
 | Ausgang | 3,3 / 4,2 / 5 V per Lötbrücke, **2,7 A** bei 5 V → 3,3 V |
-| Maße | 26 × 12,5 × 3,5 mm |
-| Anschlüsse | vier Eckpads mit je 2 Durchkontaktierungen: VIN, GND / VOUT, GND |
+| Maße | **25,8 × 13,0** × 3,5 mm (nachgemessen 2026-09-11) |
+| Anschlüsse | vier Eckkontakte mit je 2 Bohrungen im RM 2,54: VIN links oben, VOUT rechts oben, GND links und rechts unten |
 | Eigene Beschaltung | 100 µF/16 V Eingangskondensator und Betriebs-LED bereits an Bord |
 
 **Warum Buck-Boost und nicht Buck.** Die Haube liefert 4,9 V im Leerlauf. Jeder
@@ -93,15 +93,37 @@ Auch die gesamte OKI-78SR-Familie scheidet aus (3,3-V-Variante 7–36 V).
 > **3V3** umsetzen, dann das Modul allein an 4,9 V hängen, den Ausgang messen –
 > und erst danach einbauen.
 
-> **Offener Punkt – Footprint.** Im Board steht U4 noch als dreipolige
-> Stiftleiste; auf `Cmts.User` ist der Modulumriss 26 × 12,5 mm als Platzhalter
-> eingezeichnet. Quer sitzen die vier Bohrungen nach Fotomessung im 2,54-Raster
-> (±2,54 und ±5,08 mm von der Mittellinie), der Reihenabstand liegt bei ~23,5 mm
-> und damit **nicht** auf dem Raster. Das ist mit ±0,3 mm Fotomessung zu unsicher –
-> **Modul mit dem Messschieber nachmessen, dann den Footprint zeichnen.**
-> Geplant ist ein kombinierter Footprint unter dem einen Symbol U4: die vier
-> Modulpads plus daneben eine 2,54-Reihe VIN/GND/VOUT als Verdrahtungspunkt und
-> Messpunkte (Pads gleicher Nummer sind in KiCad elektrisch dasselbe).
+#### Footprint (gezeichnet 2026-09-11)
+
+Das Modul lag vor und wurde mit dem Messschieber vermessen. Die Fotomessung
+lag quer richtig (Bohrungen bei ±2,54 und ±5,08 mm von der Mittellinie), beim
+Reihenabstand daneben: es sind **22,86 mm = 9 × 2,54**, nicht ~23,5 mm. Damit
+liegt das ganze Lochbild auf dem 2,54-Raster.
+
+| | |
+|---|---|
+| Datei | `kicad/hood-control.pretty/TPS63802_Module_25.8x13.0mm.kicad_mod` |
+| Bibliothek | `hood-control` (`fp-lib-table` im Projekt, `${KIPRJMOD}`) |
+| Körper | 25,8 × 13,0 mm auf `F.SilkS`/`F.Fab`, Courtyard +0,25 mm |
+| Bohrbild | x = ±11,43 mm, y = ±2,54 und ±5,08 mm → 8 Bohrungen |
+| Pads | 1,7 mm rund, Bohrung 1,0 mm; Pad 1 rechteckig als Pin-1-Marke |
+| Pin-Nummern | 1 = VIN, 2 = GND (4 ×), 3 = VOUT – passend zu den Pins des Symbols `Converter_DCDC:OKI-78SR-12_1.0-W36-C` |
+
+Die vier Kontakte haben je zwei Bohrungen, die auf dem Modul selbst verbunden
+sind. Im Footprint tragen sie deshalb dieselbe Pad-Nummer, und die Option
+`duplicate_pad_numbers_are_jumpers` steht auf `yes`: KiCad weiß damit, dass
+die Verbindung im Bauteil steckt und verlangt sie nicht auf der Platine.
+Trotzdem sollten beim Routen **beide** Bohrungen eines Kontakts angebunden
+werden – bei 2,7 A ist das kein Luxus.
+
+Die ursprünglich geplante zusätzliche 2,54-Reihe VIN/GND/VOUT neben dem Modul
+ist entfallen: das Modul liegt flach auf der Platine und deckt seinen Platz
+vollständig ab, und zwischen C6 und TP1 bleibt neben dem Körper nicht einmal
+ein Millimeter frei. Als Messpunkte dienen TP3 (5V) und TP4 (3V3).
+
+Auf dem Bestückungsdruck steht innerhalb des Umrisses **„Loetbruecke auf
+3V3!"** – die Warnung von oben als Aufdruck, sichtbar solange das Modul noch
+nicht sitzt.
 
 ### Hinweis zu U3 (74HCT08)
 
@@ -450,8 +472,9 @@ Der dritte Durchgang war nötig, weil C8 durch die Wahl des TPS63802 von
   vertikalen Stiftleisten bleiben im Layout stehen, die Leisten werden nur
   nicht bestückt – die Adern gehen direkt in die Bohrungen. J2 (FTDI) und J4
   (Reset) bleiben steckbar, die werden ohnehin nur bei offenem Gehäuse benutzt.
-* **U4 belegt 26 × 12,5 mm.** Der Umriss ist auf `Cmts.User` eingezeichnet
-  (x 20…46, y 38,3…50,8). Der echte Footprint fehlt noch – siehe Abschnitt U4.
+* **U4 belegt 25,8 × 13,0 mm.** Seit 2026-09-11 steht dort der echte
+  Footprint (hochkant, 270°: **VIN oben, VOUT unten**), der Platzhalter auf
+  `Cmts.User` ist entfallen – siehe Abschnitt U4.
 
 ### Zonen
 
@@ -468,13 +491,23 @@ Der dritte Durchgang war nötig, weil C8 durch die Wahl des TPS63802 von
 Abstände der Abblockkondensatoren zu ihrem Versorgungspin: C3 → U1/8 = 3,4 mm,
 C4 → U2/1 = 3,5 mm, C5 → U3/14 = 3,4 mm.
 
-C1 und C6 landen 13–14 mm von U4 entfernt, C8 sogar 17 mm vom Wandlereingang.
-Das ist zum Teil ein Artefakt des Platzhalters – U4 ist im Board noch die
-dreipolige Stiftleiste, VOUT sitzt also an einer erfundenen Stelle mitten im
-Block. **Sobald der echte Footprint steht, wird die Umgebung von U4 neu
-sortiert.** Für C8 ist der Abstand ohnehin unkritisch: das Modul bringt einen
-eigenen 100-µF-Eingangskondensator mit, C8 ist reiner Energiespeicher für die
-Millisekundenskala.
+Mit dem echten Footprint (2026-09-11) sitzen die Anschlüsse fest: VIN auf
+(60,10 | 62,64 / 43,22), VOUT auf (60,10 | 62,64 / 66,08), GND je zweimal auf
+x 52,48 / 55,02 in beiden Reihen. **C8 steht damit 7,7 mm über dem
+Wandlereingang** – für den 1000-µF-Puffer gut genug, zumal das Modul einen
+eigenen 100-µF-Eingangskondensator mitbringt und C8 reiner Energiespeicher für
+die Millisekundenskala ist.
+
+Offen bleibt die **Ausgangsseite**: C6 (100 nF) liegt 12,6 mm, C1 (470 µF)
+gut 30 mm von den VOUT-Pads entfernt – beide sitzen noch dort, wo der
+Platzhalter seinen Ausgang hatte.
+Das ist der angekündigte Nachzug der U4-Umgebung – er steht noch aus und
+gehört vor das Routen.
+
+Damit der 13,0 mm breite Körper überhaupt zwischen C6 und TP1 passt, sind am
+2026-09-11 **C6 um 1,2 mm und TP2/TP4 um je 1,0 mm nach links** gerückt; C8s
+Referenztext musste aus dem Modulumriss weichen. Danach: Courtyards frei,
+Silk frei.
 
 ### Wie platziert wurde
 
@@ -490,9 +523,12 @@ Versorgungspin. Danach Verbesserungsdurchläufe bis zur Konvergenz.
 ```
 kicad-cli sch erc  --severity-all            → 0 Verstöße
 kicad-cli pcb drc  --severity-error --severity-warning
-  → 0 Violations
-  → schematic_parity: 0 Abweichungen
-  → 77 unconnected items   (= die noch fehlenden Leiterbahnen, so gewollt)
+  → 0 Violations                    (Stand 2026-09-11, mit U4-Footprint;
+                                     4 Kabelmontage-Keepouts sind Ausnahmen)
+  → schematic_parity: 9 Hinweise    (TP4-Value 3V3, und 8 × „extra footprint"
+                                     für die Bohrungen MH1–MH4 / H1–H4 ohne
+                                     Symbol – beides so gewollt)
+  → 83 unconnected items   (= die noch fehlenden Leiterbahnen, so gewollt)
 ```
 
 ### Positionen
@@ -533,7 +569,10 @@ MH1(3.5,2.5) MH2(53.5,2.5) MH3(3.5,52.5) MH4(53.5,52.5)
   `MountingHole_2.2mm_M2`. DRC 0 Violations, `schematic_parity` 0.
 * Die tote Clearance-Ausnahme für U5 wurde aus `hood-control.kicad_dru`
   entfernt – U5 gibt es in der Schaltung nicht mehr.
-* **Nächster Schritt: U4-Modul bestellen und vermessen**, dann den Footprint
-  zeichnen, die Umgebung von U4 nachziehen – und erst danach routen.
+* **U4-Modul ist da, vermessen und gezeichnet** (2026-09-11): Footprint in
+  `hood-control.pretty`, im Board platziert, DRC 0 Violations.
+* **Nächster Schritt: die Umgebung von U4 nachziehen** – vor allem C1 und C6
+  auf die VOUT-Seite holen – und erst danach routen. Die Liste unter
+  „Positionen" ist damit überholt und wird danach neu erzeugt.
 * Offen: Zweck von D1/D2 neben U3 (siehe Fallstrick 2), sowie die Bestellung
   bei Reichelt (Liste steht, Artikelnummern in der BOM).
