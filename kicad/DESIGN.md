@@ -454,11 +454,23 @@ An der Schmalseite reicht die Bohrung von y = 1,4 bis 3,6 mm; es bleibt ein
 1,4 mm breiter Steg zur Platinenkante stehen. Mit den früher eingesetzten
 3,2 mm (M3) wären es nur 0,9 mm gewesen.
 
-## Platzierung (Stand 2026-09-07, 3. Durchgang)
+## Platzierung und Routing (Stand 2026-09-11, 3. Durchgang)
 
 Das alte Board (90 × 70 mm, Netznamen einer weit zurückliegenden Revision) war
-nicht zu retten und wurde vollständig neu aufgebaut. **Leiterbahnen und
-Kupferflächen gibt es noch nicht.**
+nicht zu retten und wurde vollständig neu aufgebaut. Die Leiterplatte ist
+inzwischen vollständig geroutet; auf **B.Cu** liegt die gefüllte
+GND-Rückseitenfläche `GND_BACKPLANE` (0,6 mm Randabstand, 0,3 mm
+Kupferabstand, thermische Anbindung mit 0,6 mm Speichenbreite).
+Nach dem Füllen der Fläche wurden 22 konfliktfreie Signal- und
+Versorgungssegmente von B.Cu auf F.Cu gelegt, darunter die direkten
+J1↔J3-Verbindungen für `Net-(J1-Pin_5)` bis `Net-(J1-Pin_7)`. B.Cu bleibt
+für unvermeidbare Durchleitungen und die GND-Fläche reserviert; weitere
+Layerwechsel werden nicht blind erzwungen, wenn sie bestehende F.Cu-Netze
+kreuzen würden.
+Die redundanten GND-Leiterbahnen zwischen durchkontaktierten GND-Pads wurden
+anschließend entfernt. Die einzige verbleibende F.Cu-GND-Verbindung ist die
+notwendige Führung vom SMD-GND-Pad 15 von U1 zur GND-Durchkontaktierung; alle
+anderen GND-Pads hängen direkt an `GND_BACKPLANE`.
 
 Der dritte Durchgang war nötig, weil C8 durch die Wahl des TPS63802 von
 3300 µF liegend auf 1000 µF stehend geschrumpft ist und U4 dafür von 82 auf
@@ -498,11 +510,11 @@ Wandlereingang** – für den 1000-µF-Puffer gut genug, zumal das Modul einen
 eigenen 100-µF-Eingangskondensator mitbringt und C8 reiner Energiespeicher für
 die Millisekundenskala ist.
 
-Offen bleibt die **Ausgangsseite**: C6 (100 nF) liegt 12,6 mm, C1 (470 µF)
-gut 30 mm von den VOUT-Pads entfernt – beide sitzen noch dort, wo der
-Platzhalter seinen Ausgang hatte.
+Offen bleibt die **Ausgangsseite**: C6 (100 nF) liegt nach der Verschiebung
+vom 2026-09-11 nur noch 3,6 mm von den VOUT-Pads entfernt und ist damit
+erledigt; C1 (470 µF) sind es weiterhin 19,5 mm.
 Das ist der angekündigte Nachzug der U4-Umgebung – er steht noch aus und
-gehört vor das Routen.
+bleibt als Optimierungspunkt für eine spätere Platzierungsrevision bestehen.
 
 Damit der 13,0 mm breite Körper überhaupt zwischen C6 und TP1 passt, sind am
 2026-09-11 **C6 um 1,2 mm und TP2/TP4 um je 1,0 mm nach links** gerückt; C8s
@@ -522,13 +534,16 @@ Versorgungspin. Danach Verbesserungsdurchläufe bis zur Konvergenz.
 
 ```
 kicad-cli sch erc  --severity-all            → 0 Verstöße
-kicad-cli pcb drc  --severity-error --severity-warning
+kicad-cli pcb drc  --severity-error --severity-warning --schematic-parity
   → 0 Violations                    (Stand 2026-09-11, mit U4-Footprint;
                                      4 Kabelmontage-Keepouts sind Ausnahmen)
   → schematic_parity: 9 Hinweise    (TP4-Value 3V3, und 8 × „extra footprint"
                                      für die Bohrungen MH1–MH4 / H1–H4 ohne
                                      Symbol – beides so gewollt)
-  → 83 unconnected items   (= die noch fehlenden Leiterbahnen, so gewollt)
+  → 0 unconnected items
+  → 174 Leiterbahnsegmente, 6 Vias; B.Cu-GND-Fläche gefüllt
+  → Layeraufteilung: 133 F.Cu- und 41 B.Cu-Segmente
+  → engster Kupferabstand 0,200 mm, kleinste Bohrung 0,30 mm
 ```
 
 ### Positionen
@@ -566,13 +581,23 @@ MH1(3.5,2.5) MH2(53.5,2.5) MH3(3.5,52.5) MH4(53.5,52.5)
   Netzliste gegen den Vorstand diffen.
 * **Board am 2026-09-07 neu aufgebaut** (siehe „Platzierung"): Outline
   80 × 55 mm, alle 26 Bauteile platziert, MH1–MH4 als
-  `MountingHole_2.2mm_M2`. DRC 0 Violations, `schematic_parity` 0.
+  `MountingHole_2.2mm_M2`. Aktives DRC 0 Violations; die 9
+  `schematic_parity`-Hinweise sind die dokumentierten, beabsichtigten
+  TP4-/Bohrloch-Abweichungen.
 * Die tote Clearance-Ausnahme für U5 wurde aus `hood-control.kicad_dru`
   entfernt – U5 gibt es in der Schaltung nicht mehr.
 * **U4-Modul ist da, vermessen und gezeichnet** (2026-09-11): Footprint in
   `hood-control.pretty`, im Board platziert, DRC 0 Violations.
-* **Nächster Schritt: die Umgebung von U4 nachziehen** – vor allem C1 und C6
-  auf die VOUT-Seite holen – und erst danach routen. Die Liste unter
-  „Positionen" ist damit überholt und wird danach neu erzeugt.
+* **Fertigungsdaten liegen in `kicad/fab/`** (2026-09-11): sieben Gerber-Lagen
+  (F.Cu, B.Cu, F/B.Mask, F/B.Silkscreen, Edge.Cuts), PTH- und NPTH-Bohrdatei,
+  Gerber-Job-Datei und `hood-control-gerber.zip` als Upload-Paket. Erzeugung
+  und Bestellparameter für PCBWay stehen in `kicad/fab/FAB.md`. Wichtig: die
+  Fertigungsklasse **6/6 mil** ist Pflicht – der engste Kupferabstand ist mit
+  0,200 mm minimal unter den 0,2032 mm, die 8/8 mil verlangen würde.
+
+* **Spätere Platzierungsoptimierung:** Die Umgebung von U4 könnte noch
+  verbessert werden – vor allem C1 und C6 könnten näher an die VOUT-Seite.
+  Die Leiterplatte ist bereits geroutet; eine solche Revision würde danach
+  einen erneuten Routing-/Layerbereinigungsdurchlauf erfordern.
 * Offen: Zweck von D1/D2 neben U3 (siehe Fallstrick 2), sowie die Bestellung
   bei Reichelt (Liste steht, Artikelnummern in der BOM).
