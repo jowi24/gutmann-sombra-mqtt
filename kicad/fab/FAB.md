@@ -1,6 +1,6 @@
 # Fertigungsdaten hood-control
 
-Erzeugt am 2026-09-11 (Stand 20:03, 174 Segmente / 6 Vias) aus `../hood-control.kicad_pcb` mit KiCad 10.0.6:
+Erzeugt am 2026-09-26 (Rev. 0.3, 185 Segmente / 10 Vias) aus `../hood-control.kicad_pcb` mit KiCad 10.0.6:
 
 ```
 kicad-cli pcb export gerbers \
@@ -17,7 +17,7 @@ kicad-cli pcb export drill --format excellon --excellon-units mm \
 | `*-F_Silkscreen.gto` | Bestückungsdruck oben |
 | `*-B_Silkscreen.gbo` | Bestückungsdruck unten – **leer**, es ist nichts auf B.SilkS |
 | `*-Edge_Cuts.gm1` | Umriss, geschlossenes Rechteck 80,00 × 55,00 mm |
-| `*-PTH.drl` | 115 durchkontaktierte Bohrungen |
+| `*-PTH.drl` | 127 durchkontaktierte Bohrungen |
 | `*-NPTH.drl` | 8 nicht durchkontaktierte (MH1–4, H1–4) |
 | `*-job.gbrjob` | Gerber-Job-Datei (Lagenzuordnung + Stackup) |
 
