@@ -6,8 +6,8 @@
 	(paper "A5")
 	(title_block
 		(title "Gutmann Sombra ESP8266 Controller Unit")
-		(date "2026-09-04")
-		(rev "0.2")
+		(date "2026-09-26")
+		(rev "0.3")
 		(company "Dr. Joachim Wilke")
 	)
 	(lib_symbols
@@ -5069,6 +5069,12 @@
 		(uuid "540af6d0-28c4-4512-8e2f-406e0105fdf9")
 	)
 	(junction
+		(at 132.08 86.36)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "566114f3-5b39-407f-88c9-1b255dafd960")
+	)
+	(junction
 		(at 30.48 40.64)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5103,6 +5109,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7c2567ff-9434-4c12-bdc0-5b8040a536d1")
+	)
+	(junction
+		(at 132.08 71.12)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "83c217db-ac04-4e51-9eb1-48d5ad464831")
 	)
 	(junction
 		(at 40.64 104.14)
@@ -5293,6 +5305,16 @@
 			(type default)
 		)
 		(uuid "028abd54-8d55-4bea-9c0e-842640f02a39")
+	)
+	(wire
+		(pts
+			(xy 149.86 83.82) (xy 147.32 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "02e7ca09-775d-4b38-97df-26847854755d")
 	)
 	(wire
 		(pts
@@ -5746,16 +5768,6 @@
 	)
 	(wire
 		(pts
-			(xy 147.32 83.82) (xy 149.86 83.82)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "64386ce3-2e69-4296-a5a8-4138cf683a69")
-	)
-	(wire
-		(pts
 			(xy 58.42 36.83) (xy 58.42 39.37)
 		)
 		(stroke
@@ -5873,6 +5885,16 @@
 			(type default)
 		)
 		(uuid "8b409ef3-8c81-4585-ab49-dc39e7b8f7d3")
+	)
+	(wire
+		(pts
+			(xy 123.19 71.12) (xy 124.46 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d6e81b5-6f98-4f25-8fe9-9cd703ddf937")
 	)
 	(wire
 		(pts
@@ -6366,6 +6388,16 @@
 	)
 	(wire
 		(pts
+			(xy 123.19 86.36) (xy 124.46 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fe9f1f18-e2e3-445f-957b-848952865bdd")
+	)
+	(wire
+		(pts
 			(xy 22.86 60.96) (xy 38.1 60.96)
 		)
 		(stroke
@@ -6644,6 +6676,16 @@
 		)
 		(uuid "8f6d448f-04a5-430d-977b-b8356ab25b69")
 	)
+	(label "GND"
+		(at 123.19 86.36 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "925482db-386e-429f-afb2-70a50e7e69d7")
+	)
 	(label "5V_IN"
 		(at 81.28 114.3 0)
 		(effects
@@ -6684,6 +6726,16 @@
 		)
 		(uuid "b166f3fa-fc73-44f5-948f-5ecdc709a6ae")
 	)
+	(label "BTN_CH_1"
+		(at 157.48 68.58 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "b1ec951d-ae6e-4d82-8856-44d949b82045")
+	)
 	(label "GPIO13"
 		(at 104.14 57.15 0)
 		(effects
@@ -6703,6 +6755,16 @@
 			(justify left bottom)
 		)
 		(uuid "b61c91b5-18da-41c8-99d3-ef88a7cc3d92")
+	)
+	(label "GND"
+		(at 123.19 71.12 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b9fabd53-7abd-462c-9306-0c81c725b5af")
 	)
 	(label "GPIO0"
 		(at 104.14 39.37 0)
@@ -6754,16 +6816,6 @@
 		)
 		(uuid "d289aa8f-0bbb-4a6a-ad83-1243537563d0")
 	)
-	(label "BTN_CH_1"
-		(at 149.86 68.58 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "d52af87a-a770-4902-a752-799a1fcaf908")
-	)
 	(label "GPIO5"
 		(at 104.14 52.07 0)
 		(effects
@@ -6775,7 +6827,7 @@
 		(uuid "d6f5c6f3-2cf1-4457-8728-d98eae3dd527")
 	)
 	(label "BTN_CH_2"
-		(at 149.86 83.82 0)
+		(at 157.48 83.82 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7277,6 +7329,107 @@
 			(project "hood-control"
 				(path "/f40d9a83-5566-4929-8854-faab398af472"
 					(reference "C5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Diode:1N4148")
+		(at 153.67 83.82 180)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "20713a6a-d94b-41bb-ad74-784e7852f3d6")
+		(property "Reference" "D4"
+			(at 150.876 82.804 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "1N4148"
+			(at 153.67 80.264 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp"
+			(at 153.67 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf"
+			(at 153.67 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "100V 0.15A standard switching diode, DO-35"
+			(at 153.67 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" "D"
+			(at 153.67 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Pins" "1=K 2=A"
+			(at 153.67 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "b93f5c4e-8f1e-448f-a278-3e3bcb6337e5")
+		)
+		(pin "1"
+			(uuid "4995b16c-30b3-4dfa-ab92-a5ee056ec684")
+		)
+		(instances
+			(project "hood-control"
+				(path "/f40d9a83-5566-4929-8854-faab398af472"
+					(reference "D4")
 					(unit 1)
 				)
 			)
@@ -8160,6 +8313,86 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 128.27 71.12 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "404aa5d1-d4ee-418e-8273-564bc0332627")
+		(property "Reference" "R7"
+			(at 128.27 74.93 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 128.27 77.47 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical"
+			(at 128.27 72.898 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 128.27 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "01c37f0f-caed-4c80-85f8-170e040d2ba3")
+		)
+		(pin "2"
+			(uuid "5c8e5bd8-a2fa-4130-969c-82c885f4cf21")
+		)
+		(instances
+			(project "hood-control"
+				(path "/f40d9a83-5566-4929-8854-faab398af472"
+					(reference "R7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "4xxx:4050")
 		(at 137.16 22.86 180)
 		(unit 1)
@@ -8887,6 +9120,107 @@
 		)
 	)
 	(symbol
+		(lib_id "Diode:1N4148")
+		(at 153.67 68.58 180)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "61cf2b99-65bf-4511-a10b-bd8ffd1aad87")
+		(property "Reference" "D3"
+			(at 150.876 67.564 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "1N4148"
+			(at 153.67 65.024 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp"
+			(at 153.67 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf"
+			(at 153.67 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "100V 0.15A standard switching diode, DO-35"
+			(at 153.67 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Device" "D"
+			(at 153.67 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sim.Pins" "1=K 2=A"
+			(at 153.67 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "a965cecb-6237-4139-8b17-6dde75c9ff77")
+		)
+		(pin "1"
+			(uuid "bb7e4000-26c4-4168-b0a9-5a6757f000b5")
+		)
+		(instances
+			(project "hood-control"
+				(path "/f40d9a83-5566-4929-8854-faab398af472"
+					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 45.72 129.54 0)
 		(unit 1)
@@ -9382,6 +9716,86 @@
 			(project "hood-control"
 				(path "/f40d9a83-5566-4929-8854-faab398af472"
 					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 128.27 86.36 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "86d95446-085a-4665-84b1-df86ab1ecb92")
+		(property "Reference" "R8"
+			(at 128.27 90.17 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 128.27 92.71 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical"
+			(at 128.27 88.138 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 128.27 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "af6e5f3d-a272-4387-98e6-b977982b4137")
+		)
+		(pin "2"
+			(uuid "749909b4-45b9-4064-b8c9-8f20e90fe502")
+		)
+		(instances
+			(project "hood-control"
+				(path "/f40d9a83-5566-4929-8854-faab398af472"
+					(reference "R8")
 					(unit 1)
 				)
 			)

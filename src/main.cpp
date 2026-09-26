@@ -24,10 +24,10 @@ const size_t EVENT_LENGTH                 = 80;
 
 // Pins
 const int inputPin    = 13; // D7
-const int buttonPin1  = 12; // D6
-const int buttonPin2  = 14; // D5
-const int ledPin1     =  5; // D1
-const int ledPin2     =  4; // D2
+const int buttonPin1  = 14; // D5 - swapped like the LED pins, see below
+const int buttonPin2  = 12; // D6
+const int ledPin1     =  4; // D2 - swapped vs. the perfboard: on the PCB, J1/1+2 arrive the other way round
+const int ledPin2     =  5; // D1
 const int statusLedPin =  2; // D4, onboard blue LED (ESP-12), active LOW
 
 // MQTT config (defaults, overridden by stored config)
@@ -123,8 +123,11 @@ ICACHE_RAM_ATTR void IsrTimer() {
 	case 31: checkButtons(3); break;
 	case 35: checkLeds(3);    break;
 	case 9: case 19: case 29: case 39:
-		pinMode(buttonPin1, INPUT);
-		pinMode(buttonPin2, INPUT);
+		// Release: drive LOW. U3 (74HCT08) sits between ESP and hood; a
+		// floating HCT input would make it press keys at random. The diode
+		// behind U3 blocks LOW, so the hood's line is left alone.
+		digitalWrite(buttonPin1, LOW);
+		digitalWrite(buttonPin2, LOW);
 		break;
 	}
 	phaseCounter++;
@@ -141,7 +144,6 @@ ICACHE_RAM_ATTR void checkButtons(int line) {
 
 ICACHE_RAM_ATTR void updateButtonState(int buttonId, int buttonPin) {
 	if (buttonStateCounter[buttonId] > 0) {
-		pinMode(buttonPin, OUTPUT);
 		digitalWrite(buttonPin, HIGH);
 		buttonStateCounter[buttonId]--;
 	}
@@ -576,6 +578,12 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("\n\n" FW_NAME " v" FW_VERSION);
 
+	// Button outputs LOW as early as possible (they feed U3's inputs)
+	pinMode(buttonPin1, OUTPUT);
+	digitalWrite(buttonPin1, LOW);
+	pinMode(buttonPin2, OUTPUT);
+	digitalWrite(buttonPin2, LOW);
+
 	// Status LED: three quick blips to mark power-on / start of setup()
 	pinMode(statusLedPin, OUTPUT);
 	setStatusLed(false);
@@ -666,8 +674,6 @@ void setup() {
 		buttonStateCounter[i] = 0;
 	}
 	pinMode(inputPin,   INPUT);
-	pinMode(buttonPin1, INPUT);
-	pinMode(buttonPin2, INPUT);
 	pinMode(ledPin1,    INPUT);
 	pinMode(ledPin2,    INPUT);
 

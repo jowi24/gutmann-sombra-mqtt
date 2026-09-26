@@ -82,10 +82,6 @@
         [
           "items_not_allowed|91773158|43700000|d9b060b5-fa84-4fc4-9344-e7a08ad8c839|00000000-0000-0000-0000-000000000000",
           ""
-        ],
-        [
-          "items_not_allowed|91823597|50099122|874fb683-2010-4001-a549-5a5c9c3887c1|00000000-0000-0000-0000-000000000000",
-          ""
         ]
       ],
       "meta": {
@@ -257,7 +253,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": "0.2"
+      "sch_revision": "0.3"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -701,7 +697,7 @@
         "uuid": "f40d9a83-5566-4929-8854-faab398af472"
       }
     ],
-    "used_designators": "R5-6,C5,C7,D1-2,#PWR1-4,J1-6,TP1-6,U1-2,U4,#FLG1-2",
+    "used_designators": "R5-8,C5,C7,D1-4,#PWR1-4,J1-6,TP1-6,U1-2,U4,#FLG1-2",
     "variants": []
   },
   "sheets": [

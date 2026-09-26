@@ -34,11 +34,13 @@ Blattformat der Schematic: **A5** (420 × 297 mm).
 | R4 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up CH_PD/EN → 3,3V |
 | R5 | 2,4 kΩ | 0207 bedrahtet | s.o. | Pull-down auf den Scan-Bus (empirisch, siehe Blogartikel 2017) |
 | R6 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up RST → 3,3V |
+| R7, R8 | 10 kΩ | 0207 bedrahtet, stehend | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical` | Pull-down der U3-Eingänge (GPIO12/14), ab Rev. 0.3 |
 | C1 | 470 µF / 10 V | Elko radial, D8/RM3,5 | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | Stützelko auf `VCC` nah am ESP – überbrückt die Regelzeit des Buck-Moduls |
 | C8 | 1000 µF / 10 V | Elko radial, D10/RM5, 12,5 mm hoch (Reichelt `RD1A108M1012M128`) | `Capacitor_THT:CP_Radial_D10.0mm_P5.00mm` | Bulk-Kapazität auf `5V_IN` – puffert die strombegrenzte Haubenversorgung |
 | C3–C6 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | Abblockung: C3=U1(VCC), C4=U2(VCC 3,3V), C5=U3(5V_IN), C6=U4-Ausgang |
 | C7 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | RST-Kopplung FTDI-DTR → RST (Auto-Reset) |
 | D1, D2 | 1N4148 | DO-35 | `Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal` | Entkopplung der LED-Leseleitungen Richtung Frontpanel |
+| D3, D4 | 1N4148 | DO-35, stehend | `Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp` | Ausgangsdioden U3 → Tastenleitungen, ab Rev. 0.3 |
 | SW1 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Reset (RST → GND) |
 | SW2 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Flash-Mode (GPIO0 → GND) |
 | J1 | Pfostenleiste 1×8, 2,54 mm | "Hoodcontrol" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | Anschluss Haubenelektronik |
@@ -208,10 +210,16 @@ vollständig – es fehlt nichts mehr.
 | GPIO | Funktion | Über welchen Levelshifter |
 |---|---|---|
 | GPIO13 | Scan-Eingang der Haube (Interrupt, RISING) | U2 (4050), Gatter C (Pin 7 → 6) |
-| GPIO5  | LED-Status Haube-J7 lesen | U2 (4050), Gatter B (Pin 5 → 4) |
-| GPIO4  | LED-Status Haube-J8 lesen | U2 (4050), Gatter A (Pin 3 → 2) |
-| GPIO12 | Tastenemulation Haube-J5 (Ausgang) | U3 (HCT08), Gatter A (Pin 1+2 → 3) |
-| GPIO14 | Tastenemulation Haube-J6 (Ausgang) | U3 (HCT08), Gatter B (Pin 4+5 → 6) |
+| GPIO5  | LED-Status lesen (J1/1), Firmware `ledPin2` | U2 (4050), Gatter B (Pin 5 → 4) |
+| GPIO4  | LED-Status lesen (J1/2), Firmware `ledPin1` | U2 (4050), Gatter A (Pin 3 → 2) |
+| GPIO12 | Tastenemulation (J1/3), Firmware `buttonPin2` | U3 (HCT08), Gatter A (Pin 1+2 → 3) → D3 |
+| GPIO14 | Tastenemulation (J1/4), Firmware `buttonPin1` | U3 (HCT08), Gatter B (Pin 4+5 → 6) → D4 |
+
+> **Kanalzuordnung (Inbetriebnahme 2026-09-24):** Sowohl die beiden
+> LED-Kanäle als auch die beiden Tastenkanäle kommen gegenüber der
+> Lochraster-Firmware vertauscht an – Lüfter 1 wurde als „Timer“ erkannt,
+> „Licht an“ schaltete Stufe 2. Korrigiert in der Firmware durch Tausch von
+> `ledPin1/2` und `buttonPin1/2`; die Hardware ist unverändert.
 | GPIO2  | Onboard-Status-LED (active LOW) | – (nur intern im ESP-12-Modul, No-Connect) |
 | GPIO0  | Flash-Taster / WLAN-Config-Reset beim Boot | – (lokal, SW2 + R2 über Board-J5) |
 | CH_PD  | Enable, muss beim Boot HIGH sein | – (lokal, R4) |
@@ -330,8 +338,8 @@ Die Platine klinkt sich in die vorhandene Verbindung Haube ↔ Frontpanel ein.
 |---|---|---|---|---|
 | 1 | `LED_CH_2` | LED-Status Haube-J7 → U2/5 → GPIO5 | über D1 (Anode) auf dasselbe Netz | orange-weiß |
 | 2 | `LED_CH_1` | LED-Status Haube-J8 → U2/3 → GPIO4 | über D2 (Anode) auf dasselbe Netz | orange |
-| 3 | `BTN_CH_1` | Tastenemulation Haube-J5, von U3/3 getrieben | durchverbunden | grün-weiß |
-| 4 | `BTN_CH_2` | Tastenemulation Haube-J6, von U3/6 getrieben | durchverbunden | blau |
+| 3 | `BTN_CH_1` | Tastenemulation, von U3/3 über D3 getrieben | durchverbunden | grün-weiß |
+| 4 | `BTN_CH_2` | Tastenemulation, von U3/6 über D4 getrieben | durchverbunden | blau |
 | 5 | – | ↔ J3/5 | ↔ J1/5 | blau-weiß |
 | 6 | – | ↔ J3/6 | ↔ J1/6 | grün |
 | 7 | – | ↔ J3/7 | ↔ J1/7 | braun-weiß |
@@ -341,19 +349,50 @@ Pin 5–7 sind reine Durchleitungen zwischen Haube und Frontpanel; die Platine
 greift sie nicht ab. **Weder 5V noch GND liegen auf diesem Stecker**
 (siehe "Stromversorgung und Masse").
 
-> **Offener Punkt:** D1/D2 (1N4148, Anode an J3, Kathode am jeweiligen
-> LED-Netz) stammen aus der Lochraster-Version. Ob sie neben U3 noch gebraucht
-> werden, ist nicht abschließend geklärt – siehe Fallstrick 2.
+D1/D2 (1N4148, Anode an J3, Kathode am jeweiligen LED-Netz) saßen schon auf
+der Lochrasterplatine genau so auf den LED-Leitungen (per Fritzing-Datei
+`fritzing/abzugshaube.fzz` bestätigt, 2026-09-24). Mit der Tastenemulation
+haben sie nichts zu tun.
+
+### Tastenemulation: U3 nur mit Ausgangsdioden (D3/D4) und Pull-downs (R7/R8)
+
+Die Tastenleitungen sind Teil der Tastenmatrix zwischen Haube und Frontpanel.
+Die Platine darf sie nur **hochziehen** (Taste drücken) oder **völlig in Ruhe
+lassen** – nie auf LOW halten.
+
+* **U3 direkt an J1/3+4 (Rev. 0.2) funktioniert nicht:** Der 74HCT08 hat
+  Gegentaktausgänge und treibt die Leitung immer HIGH oder LOW; bei
+  floatenden Eingängen (ESP-Boot) zufällig. Folge: Boot-Loop des ESP,
+  Phantomtasten an der Haube (Stufe 3 + Filter = beide Kanäle in Scan-Zeile
+  2), Haube reagiert nicht mehr.
+* **Direkter Draht oder Serienwiderstand (1–2,4 kΩ) statt U3 funktioniert
+  ebenfalls nicht:** Das Frontpanel glimmt, der ESP hängt sich auf Haubenstrom
+  auf, mit Widerstand geht die Haube beim Start in einen Fehlercode. Solange
+  die 3,3-V-Schiene beim Einschalten noch bei 0 V steht, klemmen die
+  ESP-Schutzdioden die Leitungen; umgekehrt speisen die 5-V-Impulse in VCC
+  zurück. (Die Lochrasterplatine hatte GPIO12/14 direkt verdrahtet und lief
+  damit jahrelang – außerhalb der Spezifikation.)
+* **Lösung (Rev. 0.3):** D3/D4 (1N4148) in Serie hinter U3-Pin 3 bzw. 6,
+  Anode an U3, Kathode an BTN_CH. HIGH ≈ 4,3 V drückt, LOW sperrt die Diode.
+  R7/R8 (10 kΩ) ziehen die U3-Eingänge nach GND, bis die Firmware läuft.
+  Die Firmware treibt GPIO12/14 stets aktiv: LOW = loslassen, HIGH = drücken,
+  schon am Anfang von `setup()` auf LOW.
+* **Auf den gefertigten Rev.-0.2-Platinen** wird das nachgerüstet: am
+  74HCT08 Pin 3 und 6 aus dem Sockel biegen, Diode vom gebogenen Pin (Anode)
+  in die Sockelbuchse (Kathode) stecken, 10 kΩ auf der Unterseite zwischen
+  Sockelpin 2↔7 und 4↔7.
+
+Dass das Haubenlicht beim Einschalten angeht, ist ein Verhalten der Haube
+selbst (tritt auch ohne Platine auf).
 
 ## Bekannte Fallstricke aus der Lochraster-Version (im Redesign vermieden)
 
 1. **GPIO0 ohne Pull-up** war die Hauptursache für sporadische Bootfehler.
    → R2 eingeplant, wirkt über den Jumper Board-J5 in Stellung 1–2.
-2. **D1/D2-Dioden als improvisierter Rückwärts-Levelshifter** für Haube-J5/J6 –
-   funktioniert, legt aber die volle 5V-Busspannung nur diodengeschützt an
-   den ESP-GPIO. → Die *Tastenemulation* übernimmt jetzt U3 (74HCT08).
-   D1/D2 sind aber weiterhin in der Schematic, jetzt an den **LED-Leseleitungen**
-   Richtung Frontpanel. Zu prüfen, ob das so gewollt ist.
+2. **GPIO12/14 direkt an den 5-V-Tastenleitungen** – außerhalb der
+   ESP-Spezifikation. → U3 mit D3/D4 und R7/R8, siehe „Tastenemulation“.
+   (Frühere Annahme, D1/D2 hätten die Tastenleitungen geschützt, war falsch:
+   sie sitzen auf den LED-Leitungen.)
 3. **Reset-Taster war ursprünglich an GPIO16 statt RST** verdrahtet –
    im Redesign SW1 direkt an RST/EXT_RST.
 4. **Kein definierter Power-on-Reset** – Wandler-Anlaufverhalten konnte zu
@@ -599,5 +638,10 @@ MH1(3.5,2.5) MH2(53.5,2.5) MH3(3.5,52.5) MH4(53.5,52.5)
   verbessert werden – vor allem C1 und C6 könnten näher an die VOUT-Seite.
   Die Leiterplatte ist bereits geroutet; eine solche Revision würde danach
   einen erneuten Routing-/Layerbereinigungsdurchlauf erfordern.
-* Offen: Zweck von D1/D2 neben U3 (siehe Fallstrick 2), sowie die Bestellung
-  bei Reichelt (Liste steht, Artikelnummern in der BOM).
+* **Rev. 0.3 (2026-09-26):** D3/D4/R7/R8 stehend (RM 2,54) in der Reihe über
+  U3, außerhalb der Sperrfläche `Kabelmontage_1`. U4 ist jetzt mit seinem
+  Symbol verknüpft; dadurch steht `duplicate_pad_numbers_are_jumpers` auf
+  `no` – unkritisch, alle 8 U4-Bohrungen sind auf der Platine verbunden.
+* DRC-Ausnahmen für H1–H4 (Kabelbinder-Bohrungen in den Sperrflächen): die
+  Ausnahme für H4 muss nach dem Verschieben der Sperrfläche im DRC-Dialog
+  neu gesetzt werden.
