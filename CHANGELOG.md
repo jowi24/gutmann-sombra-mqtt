@@ -1,99 +1,95 @@
+🇬🇧 **English** · 🇩🇪 [Deutsch](CHANGELOG.de.md)
+
 # Changelog
 
-Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
-festgehalten.
+All notable changes to the firmware are recorded in this document.
 
 ## 0.0.9 - 2026-09-26
 
-Anpassung an die gefertigte Platine (Rev. 0.3), siehe `docs/SCHALTUNG.md`.
+Adaptation to the fabricated PCB (rev. 0.3), see
+[`docs/CIRCUIT.md`](docs/CIRCUIT.md).
 
-### Geändert
+### Changed
 
-- Die Tasten-Ausgänge GPIO12/14 werden jetzt immer aktiv getrieben:
-  HIGH = Taste drücken, LOW = loslassen. Früher wurden sie zum Loslassen
-  hochohmig geschaltet; das lässt die Eingänge des Pegelwandlers U3 floaten
-  und erzeugt Phantom-Tastendrücke.
-- GPIO12/14 werden gleich zu Beginn von `setup()` auf LOW gesetzt.
-- LED-Pins (`ledPin1/2`) und Tasten-Pins (`buttonPin1/2`) getauscht – beide
-  Kanalpaare kommen auf der Platine gegenüber der Lochraster-Version
-  vertauscht an.
+- The key outputs GPIO12/14 are now always actively driven:
+  HIGH = press, LOW = release. Previously they were switched to
+  high-impedance to release, which leaves the inputs of level shifter U3
+  floating and produces phantom key presses.
+- GPIO12/14 are set LOW right at the start of `setup()`.
+- LED pins (`ledPin1/2`) and key pins (`buttonPin1/2`) swapped – both
+  channel pairs arrive swapped on the PCB compared to the perfboard version.
 
-### Behoben
+### Fixed
 
-- Home-Assistant-Discovery der Lüftung: `state_value_template` lieferte
-  `on`/`off`, Home Assistant vergleicht das Ergebnis aber mit
-  `payload_on`/`payload_off` (`1`/`0`). Die Lüftung stand deshalb dauerhaft
-  auf `unknown`. Das Template liefert jetzt `1`/`0`.
-- Lüftungsstufe `0` wird als Preset `None` gemeldet und setzt das Preset
-  zurück, statt als ungültiges Preset verworfen zu werden.
+- Home Assistant discovery of the fan: `state_value_template` returned
+  `on`/`off`, but Home Assistant compares the result against
+  `payload_on`/`payload_off` (`1`/`0`), so the fan was permanently
+  `unknown`. The template now returns `1`/`0`.
+- Fan level `0` is reported as preset `None` and resets the preset instead
+  of being discarded as an invalid preset.
 
 ## 0.0.8 - 2026-09-08
 
-### Hinzugefügt
+### Added
 
-- Status-LED auf GPIO2 (D4, blaue Onboard-LED des ESP-12, aktiv LOW).
-  Das Blinkmuster zeigt die Boot- und Verbindungsphase ohne serielle
-  Konsole an: drei kurze Blitze beim Einschalten, schnelles Blinken
-  während der WLAN-Anmeldung, mittleres Blinken beim MQTT-Verbinden,
-  langsames Blinken bei geöffnetem Konfigurationsportal und ein kurzer
-  Heartbeat alle drei Sekunden, sobald beides steht.
+- Status LED on GPIO2 (D4, blue on-board LED of the ESP-12, active LOW).
+  The blink pattern shows the boot and connection phase without a serial
+  console: three short flashes at power-up, fast blinking while joining
+  Wi-Fi, medium blinking while connecting to MQTT, slow blinking while the
+  configuration portal is open, and a short heartbeat every three seconds
+  once both are up.
 
 ## 0.0.7 - 2026-08-16
 
-### Hinzugefügt
+### Added
 
-- Nicht blockierender WLAN-Start mit paralleler Haubensteuerung.
-- Geschützter Fallback-Hotspot `HoodControl-Setup`.
-- Konfigurationsportal unter `http://192.168.4.1`.
-- Regelmäßige WLAN-Wiederverbindungsversuche im AP+STA-Betrieb.
-- Eindeutige MQTT-Client-ID aus Gerätename und ESP8266-Chip-ID.
-- MQTT-Diagnose unter `diagnostics`, `$wifi_rssi`, `$uptime`,
-  `$reset_reason`, `$firmware`, `$ip` und `$last_error`.
-- Gepufferte Verbindungsereignisse unter dem MQTT-Topic `events`.
-- Persistente Bootphase zur Diagnose unvollständiger Startvorgänge.
-- WLAN-, MQTT- und Fehlerzähler.
-- Vollständige Neuübertragung aller Haubenzustände nach MQTT-Reconnect.
+- Non-blocking Wi-Fi start with the hood control running in parallel.
+- Password-protected fallback hotspot `HoodControl-Setup`.
+- Configuration portal at `http://192.168.4.1`.
+- Periodic Wi-Fi reconnection attempts in AP+STA mode.
+- Unique MQTT client ID from device name and ESP8266 chip ID.
+- MQTT diagnostics under `diagnostics`, `$wifi_rssi`, `$uptime`,
+  `$reset_reason`, `$firmware`, `$ip` and `$last_error`.
+- Buffered connection events under the MQTT topic `events`.
+- Persistent boot stage for diagnosing incomplete start-ups.
+- Wi-Fi, MQTT and error counters.
+- Full republish of all hood states after an MQTT reconnect.
 
-### Geändert
+### Changed
 
-- MQTT-Wiederverbindungen verwenden exponentielles Backoff bis fünf Minuten.
-- MQTT-Sockettimeout wurde auf drei Sekunden reduziert.
-- MQTT-Befehle werden mit QoS 1 abonniert.
-- Der Fallback-Hotspot wird nach einer Minute stabiler WLAN-Verbindung
-  abgeschaltet.
-- Konfigurationsänderungen führen nach erfolgreichem Speichern zu einem
-  kontrollierten Neustart.
-- Fehler beim Lesen oder Schreiben der Konfiguration sowie beim Publizieren
-  und Abonnieren werden sichtbar protokolliert.
+- MQTT reconnects use exponential backoff up to five minutes.
+- MQTT socket timeout reduced to three seconds.
+- MQTT commands are subscribed with QoS 1.
+- The fallback hotspot is switched off after one minute of stable Wi-Fi.
+- Configuration changes trigger a controlled restart after a successful save.
+- Errors reading or writing the configuration, and publish/subscribe
+  errors, are logged visibly.
 
-### Behoben
+### Fixed
 
-- Ein fehlgeschlagener WLAN-Start kann die Firmware nicht mehr dauerhaft im
-  blockierenden WiFiManager-Portal festsetzen.
-- Zustandsänderungen während einer MQTT-Unterbrechung werden nach dem
-  Wiederverbinden erneut synchronisiert.
-- Eine feste MQTT-Client-ID kann nicht mehr mit einer zweiten gleichnamigen
-  Installation kollidieren.
+- A failed Wi-Fi start can no longer lock the firmware permanently in the
+  blocking WiFiManager portal.
+- State changes during an MQTT outage are resynchronised after reconnecting.
+- A fixed MQTT client ID can no longer collide with a second installation of
+  the same name.
 
-### Validierung
+### Validation
 
-- Erfolgreicher Build für `nodemcuv2` und `nodemcuv2-ota`.
-- RAM: 35.892 von 81.920 Bytes (43,8 %).
-- Flash: 433.608 von 1.044.464 Bytes (41,5 %).
-- Firmware erfolgreich per USB geschrieben und anhand des Flash-Hashes
-  verifiziert.
+- Successful build for `nodemcuv2` and `nodemcuv2-ota`.
+- RAM: 35,892 of 81,920 bytes (43.8 %).
+- Flash: 433,608 of 1,044,464 bytes (41.5 %).
+- Firmware written over USB and verified against the flash hash.
 
 ## 0.0.6 - 2026-07-14
 
-- WLAN-Auto-Reconnect aktiviert.
-- Maximale WLAN-Sendeleistung eingestellt.
-- WLAN-Schlafmodus deaktiviert.
-- Aktive WLAN-Prüfung und MQTT-Verbindungsversuche nur bei bestehender
-  WLAN-Verbindung ergänzt.
+- Wi-Fi auto-reconnect enabled.
+- Maximum Wi-Fi transmit power set.
+- Wi-Fi sleep mode disabled.
+- Active Wi-Fi check added; MQTT connection attempts only while Wi-Fi is up.
 
 ## 0.0.5
 
-- Firmware zu PlatformIO migriert.
-- Homie durch WiFiManager und PubSubClient ersetzt.
-- Home-Assistant-MQTT-Discovery ergänzt.
-- Lüfter-Presets, Licht-Entity und OTA-Unterstützung ergänzt.
+- Firmware migrated to PlatformIO.
+- Homie replaced by WiFiManager and PubSubClient.
+- Home Assistant MQTT discovery added.
+- Fan presets, light entity and OTA support added.

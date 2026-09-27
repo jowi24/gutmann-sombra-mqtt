@@ -1,652 +1,643 @@
+🇬🇧 **English** · 🇩🇪 [Deutsch](DESIGN.de.md)
+
 # Hood-Control PCB – Redesign
 
-Diese Doku beschreibt die Schematic in `hood-control.kicad_pro` /
-`hood-control.kicad_sch`. Alle Werte sind aus der Fehlersuche an der
-Lochraster-Version abgeleitet (siehe CHANGELOG.md / Debugging-Session
-vom 2026-09-03) sowie aus dem Blogartikel von 2017
+This document describes the schematic in `hood-control.kicad_pro` /
+`hood-control.kicad_sch`. All values are derived from debugging the
+perfboard version (see [CHANGELOG.md](../CHANGELOG.md) / debugging session
+of 2026-09-03) and from the 2017 blog post
 ("Do-It-Yourself IoT Modul für die Dunstabzugshaube").
 
-**Bauweise: THT (bedrahtet).** Alle Widerstände/Kondensatoren bedrahtet,
-alle ICs in DIP-Sockeln, Stecker als Pfostenleisten 2,54 mm, Taster als
-6-mm-THT-Kurzhubtaster. Einziges SMD-Teil ist das ESP-12E-Modul selbst.
-Der Spannungswandler ist **kein diskreter Schaltregler**, sondern ein
-fertiges TPS63802-Buck-Boost-Modul (U4, 8 Bohrungen), flach aufgelötet oder auf
-Stiftleisten gesteckt.
+For a beginner-friendly explanation of *how* the circuit works, see
+[`docs/CIRCUIT.md`](../docs/CIRCUIT.md).
 
-Blattformat der Schematic: **A5** (210 × 148 mm).
+**Construction: THT (through-hole).** All resistors/capacitors are leaded,
+all ICs sit in DIP sockets, connectors are 2.54 mm pin headers, buttons are
+6 mm THT tactile switches. The only SMD part is the ESP-12E module itself.
+The voltage converter is **not a discrete switching regulator** but a
+ready-made TPS63802 buck-boost module (U4, 8 holes), soldered flat or
+plugged onto pin headers.
 
-> **Namenskollision beachten:** Die Haubenelektronik benennt ihre eigenen
-> Matrixleitungen ebenfalls J1–J8 (J1–J4 = Scan-Eingänge, J5–J6 = Tasten-
-> Ausgänge, J7–J8 = LED-Ausgänge). Die Steckverbinder *dieser Platine*
-> heißen ebenfalls J1–J6. Wo Verwechslungsgefahr besteht, ist im Folgenden
-> "Haube-J5" bzw. "Board-J5" ausgeschrieben.
+Schematic sheet size: **A5** (210 × 148 mm).
 
-## Stückliste (BOM)
+> **Mind the name clash:** the hood electronics names its own matrix lines
+> J1–J8 as well (J1–J4 = scan inputs, J5–J6 = key outputs, J7–J8 = LED
+> outputs). The connectors *of this board* are also called J1–J6. Where
+> there is a risk of confusion, "hood-J5" or "board-J5" is spelled out.
 
-| Ref | Bauteil | Wert/Typ | Footprint | Zweck |
+## Bill of materials (BOM)
+
+| Ref | Part | Value/type | Footprint | Purpose |
 |---|---|---|---|---|
-| U1 | ESP-12E/F | ESP8266 Modul (SMD) | `RF_Module:ESP-12E` | Microcontroller |
-| U2 | CD4050BE / HEF4050BP / 74HC4050N | Hex-Buffer, **16-pol. DIP** | `Package_DIP:DIP-16_W7.62mm_Socket` | Pegelwandlung 5V→3,3V (Lesen: Scan-Bus, Haube-J7/J8) |
-| U3 | **74HCT08** (z.B. SN74HCT08N) | Quad-AND, 14-pol. DIP | `Package_DIP:DIP-14_W7.62mm_Socket` | Pegelwandlung 3,3V→5V (Treiben: Haube-J5/J6) |
-| U4 | **TPS63802-Buck-Boost-Modul** (eBay, PCB-Tronic24) | 1,5–5,5 V → 3,3 V, 2,7 A | `hood-control:TPS63802_Module_25.8x13.0mm` (projekteigene Bibliothek) | Stromversorgung (Ersatz für den 2017er Mini-Wandler) |
-| R2 | 10 kΩ | 0207 bedrahtet | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | Pull-up GPIO0 → 3,3V, über Board-J5 Pin 1 |
-| R3 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-down GPIO15 → GND |
-| R4 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up CH_PD/EN → 3,3V |
-| R5 | 2,4 kΩ | 0207 bedrahtet | s.o. | Pull-down auf den Scan-Bus (empirisch, siehe Blogartikel 2017) |
-| R6 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up RST → 3,3V |
-| R7, R8 | 10 kΩ | 0207 bedrahtet, stehend | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical` | Pull-down der U3-Eingänge (GPIO12/14), ab Rev. 0.3 |
-| C1 | 470 µF / 10 V | Elko radial, D8/RM3,5 | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | Stützelko auf `VCC` nah am ESP – überbrückt die Regelzeit des Buck-Boost-Moduls |
-| C8 | 1000 µF / 10 V | Elko radial, D10/RM5, 12,5 mm hoch (Reichelt `RD1A108M1012M128`) | `Capacitor_THT:CP_Radial_D10.0mm_P5.00mm` | Bulk-Kapazität auf `5V_IN` – puffert die strombegrenzte Haubenversorgung |
-| C3–C6 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | Abblockung: C3=U1(VCC), C4=U2(VCC 3,3V), C5=U3(5V_IN), C6=U4-Ausgang |
-| C7 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | RST-Kopplung FTDI-DTR → RST (Auto-Reset) |
-| D1, D2 | 1N4148 | DO-35 | `Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal` | Entkopplung der LED-Leseleitungen Richtung Frontpanel |
-| D3, D4 | 1N4148 | DO-35, stehend | `Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp` | Ausgangsdioden U3 → Tastenleitungen, ab Rev. 0.3 |
-| SW1 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Reset (RST → GND) |
-| SW2 | Taster 6 mm THT | – | `Button_Switch_THT:SW_PUSH_6mm` | Flash-Mode (GPIO0 → GND) |
-| J1 | Pfostenleiste 1×8, 2,54 mm | "Hoodcontrol" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | Anschluss Haubenelektronik |
-| J2 | Pfostenleiste 1×6, 2,54 mm | FTDI-Header | `Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical` | DTR, RXI, TXO, VCC, n.c., GND |
-| J3 | Pfostenleiste 1×8, 2,54 mm | "Frontpanel" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | Anschluss Frontpanel |
-| J4 | Pfostenleiste 1×2, 2,54 mm | "Reset" | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | externer Reset-Taster (RST → GND) |
-| J5 | Pfostenleiste 1×3, 2,54 mm | "Flash/Run" | `Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical` | Jumper: 1–2 = Run, 2–3 = Flash |
-| J6 | Pfostenleiste 1×2, 2,54 mm | "PWR_IN" | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | Versorgung + Masse vom Service-Anschluss der Haube |
+| U1 | ESP-12E/F | ESP8266 module (SMD) | `RF_Module:ESP-12E` | microcontroller |
+| U2 | CD4050BE / HEF4050BP / 74HC4050N | hex buffer, **16-pin DIP** | `Package_DIP:DIP-16_W7.62mm_Socket` | level shifting 5 V→3.3 V (reading: scan bus, hood-J7/J8) |
+| U3 | **74HCT08** (e.g. SN74HCT08N) | quad AND, 14-pin DIP | `Package_DIP:DIP-14_W7.62mm_Socket` | level shifting 3.3 V→5 V (driving: hood-J5/J6) |
+| U4 | **TPS63802 buck-boost module** (eBay, PCB-Tronic24) | 1.5–5.5 V → 3.3 V, 2.7 A | `hood-control:TPS63802_Module_25.8x13.0mm` (project library) | power supply (replaces the 2017 mini converter) |
+| R2 | 10 kΩ | 0207 leaded | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | pull-up GPIO0 → 3.3 V, via board-J5 pin 1 |
+| R3 | 10 kΩ | 0207 leaded | same | pull-down GPIO15 → GND |
+| R4 | 10 kΩ | 0207 leaded | same | pull-up CH_PD/EN → 3.3 V |
+| R5 | 2.4 kΩ | 0207 leaded | same | pull-down on the scan bus (empirical, see 2017 blog post) |
+| R6 | 10 kΩ | 0207 leaded | same | pull-up RST → 3.3 V |
+| R7, R8 | 10 kΩ | 0207 leaded, upright | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical` | pull-down of U3 inputs (GPIO12/14), since rev. 0.3 |
+| C1 | 470 µF / 10 V | radial electrolytic, D8/P3.5 | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | support cap on `VCC` near the ESP – bridges the response time of the buck-boost module |
+| C8 | 1000 µF / 10 V | radial electrolytic, D10/P5, 12.5 mm tall (Reichelt `RD1A108M1012M128`) | `Capacitor_THT:CP_Radial_D10.0mm_P5.00mm` | bulk capacitance on `5V_IN` – buffers the current-limited hood supply |
+| C3–C6 | 100 nF | ceramic disc, P5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | decoupling: C3=U1 (VCC), C4=U2 (VCC 3.3 V), C5=U3 (5V_IN), C6=U4 output |
+| C7 | 100 nF | ceramic disc, P5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | RST coupling FTDI-DTR → RST (auto-reset) |
+| D1, D2 | 1N4148 | DO-35 | `Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal` | decoupling of the LED read lines towards the front panel |
+| D3, D4 | 1N4148 | DO-35, upright | `Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp` | U3 output diodes → key lines, since rev. 0.3 |
+| SW1 | 6 mm THT button | – | `Button_Switch_THT:SW_PUSH_6mm` | reset (RST → GND) |
+| SW2 | 6 mm THT button | – | `Button_Switch_THT:SW_PUSH_6mm` | flash mode (GPIO0 → GND) |
+| J1 | pin header 1×8, 2.54 mm | "Hoodcontrol" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | connection to hood electronics |
+| J2 | pin header 1×6, 2.54 mm | FTDI header | `Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical` | DTR, RXI, TXO, VCC, n.c., GND |
+| J3 | pin header 1×8, 2.54 mm | "Frontpanel" | `Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical` | connection to front panel |
+| J4 | pin header 1×2, 2.54 mm | "Reset" | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | external reset button (RST → GND) |
+| J5 | pin header 1×3, 2.54 mm | "Flash/Run" | `Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical` | jumper: 1–2 = run, 2–3 = flash |
+| J6 | pin header 1×2, 2.54 mm | "PWR_IN" | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | supply + ground from the hood's service connector |
 
-> **Achtung bei alten Notizen:** In CHANGELOG und Blogartikel ist mit "dem großen
-> Elko" immer C1 gemeint. Seit der Umverteilung der Pufferung ist **C8** der große
-> Bulk-Elko (seit 2026-09-07 **1000 µF** auf `5V_IN`) und **C1** der kleinere
-> Stützelko (470 µF auf `VCC`).
+> **Beware of old notes:** in the changelog and the blog post, "the big
+> electrolytic" always means C1. Since the buffering was redistributed,
+> **C8** is the large bulk capacitor (since 2026-09-07 **1000 µF** on
+> `5V_IN`) and **C1** the smaller support capacitor (470 µF on `VCC`).
 >
-> Die Nummerierung hat Lücken (kein C2, kein R1). C2 war der alte 4,7-µF-Elko
-> der RST-Kopplung und wurde durch C7 ersetzt; der 2,5-kΩ-Pull-down heißt in
-> der Schematic R5, nicht R1. Ein Re-Annotate würde nur neue Abweichungen
-> zwischen Doku und Schematic erzeugen und unterbleibt bewusst.
+> The numbering has gaps (no C2, no R1). C2 was the old 4.7 µF electrolytic
+> for RST coupling and was replaced by C7; the 2.5 kΩ pull-down is called R5
+> in the schematic, not R1. A re-annotation would only create new mismatches
+> between documentation and schematic and is deliberately not done.
 
-### U4 – Spannungswandler (entschieden 2026-09-07)
+### U4 – voltage converter (decided 2026-09-07)
 
-Bestückt wird ein **TPS63802-Buck-Boost-Modul** (eBay, Händler PCB-Tronic24,
-4,79 €).
+A **TPS63802 buck-boost module** is fitted (eBay, seller PCB-Tronic24,
+€4.79).
 
 | | |
 |---|---|
 | IC | TPS63802 (Texas Instruments) |
-| Eingang | **1,5 – 5,5 V** (Anlauf ab 1,8 V) |
-| Ausgang | 3,3 / 4,2 / 5 V per Lötbrücke, **2,7 A** bei 5 V → 3,3 V |
-| Maße | **25,8 × 13,0** × 3,5 mm (nachgemessen 2026-09-11) |
-| Anschlüsse | vier Eckkontakte mit je 2 Bohrungen im RM 2,54: VIN links oben, VOUT rechts oben, GND links und rechts unten |
-| Eigene Beschaltung | 100 µF/16 V Eingangskondensator und Betriebs-LED bereits an Bord |
+| Input | **1.5 – 5.5 V** (start-up from 1.8 V) |
+| Output | 3.3 / 4.2 / 5 V via solder bridge, **2.7 A** at 5 V → 3.3 V |
+| Dimensions | **25.8 × 13.0** × 3.5 mm (measured 2026-09-11) |
+| Connections | four corner contacts with 2 holes each on 2.54 mm pitch: VIN top left, VOUT top right, GND bottom left and right |
+| On-board parts | 100 µF/16 V input capacitor and power LED already on the module |
 
-**Warum Buck-Boost und nicht Buck.** Die Haube liefert 4,9 V im Leerlauf. Jeder
-gängige Buck braucht mindestens 4,5 – 6 V und fällt darunter aus der Regelung –
-das ist der Brownout-Boot-Loop der Lochraster-Version. Ein Buck-Boost ab 1,5 V
-hat diese Kante nicht: sackt der Eingang unter 3,3 V, regelt er einfach weiter.
+**Why buck-boost and not buck.** The hood supplies 4.9 V at no load. Every
+common buck needs at least 4.5 – 6 V and drops out of regulation below that
+– that is the brownout boot loop of the perfboard version. A buck-boost from
+1.5 V doesn't have this edge: if the input sags below 3.3 V, it simply keeps
+regulating.
 
-**Was bei Reichelt geprüft wurde und ausscheidet** (Stand 2026-09-07):
+**What was checked at Reichelt and rejected** (as of 2026-09-07):
 
-| Artikel-Nr. | Vin min | Preis | |
+| Part no. | Vin min | Price | |
 |---|---|---|---|
-| `TSRN 1-2433` | 4,6 V | 14,10 € | 0,3 V Reserve, dreifacher Preis |
-| `TSR 1-2433` | 4,75 V | 6,85 € | zu knapp |
-| `R-78E33-05` | 6 V | 3,55 € | zu hoch |
-| `TSR 1-2433E` | 6 V | 3,99 € | zu hoch, lieferbar erst ab 2.11.2026 |
+| `TSRN 1-2433` | 4.6 V | €14.10 | 0.3 V margin, three times the price |
+| `TSR 1-2433` | 4.75 V | €6.85 | too tight |
+| `R-78E33-05` | 6 V | €3.55 | too high |
+| `TSR 1-2433E` | 6 V | €3.99 | too high, available only from 2026-11-02 |
 
-Auch die gesamte OKI-78SR-Familie scheidet aus (3,3-V-Variante 7–36 V).
+The whole OKI-78SR family is ruled out as well (3.3 V variant 7–36 V).
 
-> **Achtung beim Einbau:** Das Modul kommt **ab Werk auf 4,2 V** eingestellt.
-> Der ESP8266 verträgt absolut maximal 3,6 V. Also erst die Lötbrücke auf
-> **3V3** umsetzen, dann das Modul allein an 4,9 V hängen, den Ausgang messen –
-> und erst danach einbauen.
+> **Caution when fitting:** the module ships **set to 4.2 V**. The ESP8266
+> tolerates an absolute maximum of 3.6 V. So first move the solder bridge to
+> **3V3**, then connect the module alone to 4.9 V, measure the output – and
+> only then fit it.
 
-#### Footprint (gezeichnet 2026-09-11)
+#### Footprint (drawn 2026-09-11)
 
-Das Modul lag vor und wurde mit dem Messschieber vermessen. Die Fotomessung
-lag quer richtig (Bohrungen bei ±2,54 und ±5,08 mm von der Mittellinie), beim
-Reihenabstand daneben: es sind **22,86 mm = 9 × 2,54**, nicht ~23,5 mm. Damit
-liegt das ganze Lochbild auf dem 2,54-Raster.
+The module was at hand and measured with calipers. The photo-based estimate
+was right across (holes at ±2.54 and ±5.08 mm from the centre line) but off
+for the row spacing: it is **22.86 mm = 9 × 2.54**, not ~23.5 mm. So the
+whole hole pattern sits on the 2.54 mm grid.
 
 | | |
 |---|---|
-| Datei | `kicad/hood-control.pretty/TPS63802_Module_25.8x13.0mm.kicad_mod` |
-| Bibliothek | `hood-control` (`fp-lib-table` im Projekt, `${KIPRJMOD}`) |
-| Körper | 25,8 × 13,0 mm auf `F.SilkS`/`F.Fab`, Courtyard +0,25 mm |
-| Bohrbild | x = ±11,43 mm, y = ±2,54 und ±5,08 mm → 8 Bohrungen |
-| Pads | 1,7 mm rund, Bohrung 1,0 mm; Pad 1 rechteckig als Pin-1-Marke |
-| Pin-Nummern | 1 = VIN, 2 = GND (4 ×), 3 = VOUT – passend zu den Pins des Symbols `Converter_DCDC:OKI-78SR-12_1.0-W36-C` |
+| File | `kicad/hood-control.pretty/TPS63802_Module_25.8x13.0mm.kicad_mod` |
+| Library | `hood-control` (`fp-lib-table` in the project, `${KIPRJMOD}`) |
+| Body | 25.8 × 13.0 mm on `F.SilkS`/`F.Fab`, courtyard +0.25 mm |
+| Hole pattern | x = ±11.43 mm, y = ±2.54 and ±5.08 mm → 8 holes |
+| Pads | 1.7 mm round, 1.0 mm drill; pad 1 rectangular as pin-1 marker |
+| Pin numbers | 1 = VIN, 2 = GND (4 ×), 3 = VOUT – matching the pins of symbol `Converter_DCDC:OKI-78SR-12_1.0-W36-C` |
+| 3D model | `kicad/3dmodels/TPS63802_Module_25.8x13.0mm.step` (generated by `create_tps63802_module.py` in FreeCAD) |
 
-Die vier Kontakte haben je zwei Bohrungen, die auf dem Modul selbst verbunden
-sind. Im Footprint tragen sie deshalb dieselbe Pad-Nummer, und die Option
-`duplicate_pad_numbers_are_jumpers` steht auf `yes`: KiCad weiß damit, dass
-die Verbindung im Bauteil steckt und verlangt sie nicht auf der Platine.
-Trotzdem sollten beim Routen **beide** Bohrungen eines Kontakts angebunden
-werden – bei 2,7 A ist das kein Luxus.
+Each of the four contacts has two holes that are connected on the module
+itself. In the footprint they therefore share the same pad number, and the
+option `duplicate_pad_numbers_are_jumpers` is set to `yes`: KiCad then knows
+the connection is inside the part and doesn't require it on the board.
+Still, **both** holes of a contact should be connected when routing – at
+2.7 A that is no luxury.
 
-Die ursprünglich geplante zusätzliche 2,54-Reihe VIN/GND/VOUT neben dem Modul
-ist entfallen: das Modul liegt flach auf der Platine und deckt seinen Platz
-vollständig ab, und zwischen C6 und TP1 bleibt neben dem Körper nicht einmal
-ein Millimeter frei. Als Messpunkte dienen TP3 (5V) und TP4 (3V3).
+The originally planned extra 2.54 mm row VIN/GND/VOUT next to the module was
+dropped: the module lies flat on the board and covers its area completely,
+and between C6 and TP1 there is not even a millimetre left next to the body.
+TP3 (5V) and TP4 (3V3) serve as test points.
 
-Auf dem Bestückungsdruck steht innerhalb des Umrisses **„Loetbruecke auf
-3V3!"** – die Warnung von oben als Aufdruck, sichtbar solange das Modul noch
-nicht sitzt.
+The silkscreen inside the outline reads **"Loetbruecke auf 3V3!"** ("solder
+bridge to 3V3!") – the warning above as a print, visible while the module is
+not yet fitted.
 
-### Hinweis zu U3 (74HCT08)
+### Note on U3 (74HCT08)
 
-In den installierten KiCad-Bibliotheken existiert kein eigenes 74HCT08-Symbol.
-Verwendet wird deshalb das Symbol `74xx:74LS08` (**identische Pinbelegung**),
-das Value-Feld ist aber auf `74HCT08` gesetzt, damit BOM und Bestückungsdruck
-stimmen. **Bestückt werden muss ein HCT-Typ** – nur der HCT-Eingangspegel
-(V_IH ≈ 2,0 V) lässt sich sicher aus 3,3 V ansteuern.
+The installed KiCad libraries have no dedicated 74HCT08 symbol. The symbol
+`74xx:74LS08` (**identical pinout**) is used instead, but the value field is
+set to `74HCT08` so BOM and silkscreen are correct. **An HCT type must be
+fitted** – only the HCT input threshold (V_IH ≈ 2.0 V) can be driven safely
+from 3.3 V.
 
-## Beschaffung
+## Sourcing
 
-### Bezugsquellen
+### Suppliers
 
-| Was | Wo |
+| What | Where |
 |---|---|
-| U4, TPS63802-Buck-Boost-Modul | eBay, Händler **PCB-Tronic24** (Cuxhaven), Artikel-Nr. 376238468668 – <https://www.ebay.de/itm/376238468668> – 4,79 € (ab 4 Stück 4,31 €) |
-| alle übrigen Bauteile | reichelt.de, Artikelnummern unten |
+| U4, TPS63802 buck-boost module | eBay, seller **PCB-Tronic24** (Cuxhaven), item no. 376238468668 – <https://www.ebay.de/itm/376238468668> – €4.79 (€4.31 from 4 pcs) |
+| all other parts | reichelt.de, part numbers below |
 
-Das TPS63802 gibt es auch bei AliExpress (diymore, 10,4 × 7,9 mm, 2,59 €), dort
-kommen aber ~3 € Einfuhrgebühr je Artikel dazu und die Lieferzeit liegt bei
-~10 Tagen. Das eBay-Angebot ist damit günstiger, schneller und hat Rückgaberecht.
+The TPS63802 is also available on AliExpress (diymore, 10.4 × 7.9 mm,
+€2.59), but ~€3 import fee per item is added there and delivery takes ~10
+days. The eBay offer is therefore cheaper, faster and returnable.
 
-### Reichelt-Artikelnummern
+### Reichelt part numbers
 
-| Ref | Stk | Artikel-Nr. | Beschreibung |
+| Ref | Qty | Part no. | Description |
 |---|---|---|---|
-| C3–C7 | 5 | `X7R-5 100N` | Vielschicht-Kerko 100 nF, 50/100 V, X7R ±10 %, RM 5,0 |
-| C1 | 1 | `WL1C477M0811M` | Elko 470 µF/16 V, 105 °C, Low ESR, RM 3,5, 8 × 11,5 mm |
-| C8 | 1 | `RD1A108M1012M128` | Elko 1000 µF/**10 V**, 105 °C, RM 5, D10 × **12,5 mm** |
-| R2, R3, R4, R6 | 4 | `METALL 10,0K` | 10,0 kΩ, 0207, 0,6 W, 1 % |
-| R5 | 1 | `METALL 2,40K` | 2,40 kΩ, 0207, 0,6 W, 1 % |
-| D1, D2 | 2 | `1N 4148` | Schalt-Diode 100 V / 150 mA, DO-35 |
-| SW1, SW2 | 2 | `DIP DTS-61K` | Kurzhubtaster 6 × 6 × 4,3 mm, Print |
-| U2 | 1 | `CD 4050BE TEX` | CMOS Hex Non-Inverting Buffer, 3–18 V, DIP-16 |
-| U3 | 1 | `74HCT 08` | AND-Gate, 4-fach, 4,5–5,5 V, DIP-14 |
-| U2 (Fassung) | 1 | `GS 16` | IC-Sockel 16-polig, RM 7,62 |
-| U3 (Fassung) | 1 | `GS 14` | IC-Sockel 14-polig, RM 7,62 |
-| J2, J4, J5 | 1 | `ECON SL40G1` | Stiftleiste 1 × 40, gerade, 2,54 mm (11 Pins gebraucht) |
-| J5 | 1 | `JUMPER 2,54 SW` | Kurzschlussbrücke RM 2,54 |
-| Werkzeug | 1 | `ANMAS MG81000N` | Kopfbandlupe mit LED, 5 Linsen |
+| C3–C7 | 5 | `X7R-5 100N` | multilayer ceramic 100 nF, 50/100 V, X7R ±10 %, P5.0 |
+| C1 | 1 | `WL1C477M0811M` | electrolytic 470 µF/16 V, 105 °C, low ESR, P3.5, 8 × 11.5 mm |
+| C8 | 1 | `RD1A108M1012M128` | electrolytic 1000 µF/**10 V**, 105 °C, P5, D10 × **12.5 mm** |
+| R2, R3, R4, R6 | 4 | `METALL 10,0K` | 10.0 kΩ, 0207, 0.6 W, 1 % |
+| R5 | 1 | `METALL 2,40K` | 2.40 kΩ, 0207, 0.6 W, 1 % |
+| D1, D2 | 2 | `1N 4148` | switching diode 100 V / 150 mA, DO-35 |
+| SW1, SW2 | 2 | `DIP DTS-61K` | tactile switch 6 × 6 × 4.3 mm, PCB |
+| U2 | 1 | `CD 4050BE TEX` | CMOS hex non-inverting buffer, 3–18 V, DIP-16 |
+| U3 | 1 | `74HCT 08` | AND gate, quad, 4.5–5.5 V, DIP-14 |
+| U2 (socket) | 1 | `GS 16` | IC socket 16-pin, 7.62 mm |
+| U3 (socket) | 1 | `GS 14` | IC socket 14-pin, 7.62 mm |
+| J2, J4, J5 | 1 | `ECON SL40G1` | pin header 1 × 40, straight, 2.54 mm (11 pins needed) |
+| J5 | 1 | `JUMPER 2,54 SW` | jumper, 2.54 mm pitch |
+| tool | 1 | `ANMAS MG81000N` | head-band magnifier with LED, 5 lenses |
 
-**J1, J3 und J6 stehen bewusst nicht in der Liste** – die werden direkt
-verdrahtet, dafür braucht es nur Litze (siehe „Platzierung").
+Since rev. 0.3, D3/D4 (1N4148) and R7/R8 (10 kΩ) are needed in addition –
+the spare parts of the order above cover them.
 
-Ein paar Hinweise zur Auswahl, damit sie nicht wieder verlorengeht:
+**J1, J3 and J6 are deliberately not in the list** – they are wired
+directly, which only needs stranded wire (see "Placement").
 
-* **`X7R-5 100N`, nicht `KERKO 100N`.** Letzterer ist zwar einen Cent billiger,
-  aber Y5V mit −20/+80 % – die Kapazität bricht mit Temperatur und Spannung weg.
-* **C8 in 10 V, nicht 16 V.** Alle 1000-µF-Typen mit 16 V bauen bei Reichelt
-  mindestens 16 mm hoch und reißen damit das 14-mm-Limit. Die 10-V-Variante gibt
-  es in D10 × 12,5 mm, und 10 V auf einer 4,9-V-Schiene ist doppelte Reserve.
-* **R5 mit 2,40 kΩ.** Bis 2026-09-07 stand im Schaltplan 2,5 kΩ – kein Normwert,
-  die E24-Reihe hat 2,4 k und 2,7 k. Für einen Pull-down auf dem Scan-Bus ist der
-  Wert unkritisch (er stammt empirisch aus dem Blogartikel von 2017). Schaltplan
-  und Board sind auf **2,4 kΩ** nachgezogen.
-* **M2-Schrauben führt Reichelt nicht** – die Suche liefert nur M.2-SSD-Zubehör.
+A few notes on the selection so they don't get lost again:
 
-### Bestellt am 2026-09-07
+* **`X7R-5 100N`, not `KERKO 100N`.** The latter is a cent cheaper but Y5V
+  with −20/+80 % – the capacitance collapses with temperature and voltage.
+* **C8 rated 10 V, not 16 V.** All 1000 µF types rated 16 V at Reichelt are
+  at least 16 mm tall and break the 14 mm limit. The 10 V variant comes in
+  D10 × 12.5 mm, and 10 V on a 4.9 V rail is double margin.
+* **R5 at 2.40 kΩ.** Until 2026-09-07 the schematic said 2.5 kΩ – not a
+  standard value, the E24 series has 2.4 k and 2.7 k. For a pull-down on the
+  scan bus the value is uncritical (it comes empirically from the 2017 blog
+  post). Schematic and board are updated to **2.4 kΩ**.
+* **Reichelt doesn't carry M2 screws** – the search only returns M.2 SSD
+  accessories.
 
-| Artikel-Nr. | Stk | Anmerkung |
+### Ordered on 2026-09-07
+
+| Part no. | Qty | Note |
 |---|---|---|
-| `X7R-5 100N` | 10 | 5 gebraucht |
-| `WL1C477M0811M` | 2 | 1 gebraucht |
-| `RD1A108M1012M128` | 4 | 1 gebraucht |
-| `METALL 10,0K` | 10 | 4 gebraucht |
-| `METALL 2,40K` | 10 | 1 gebraucht |
-| `1N 4148` | 5 | 2 gebraucht |
-| `DIP DTS-61K` | 2 | 2 gebraucht, **kein Ersatz** |
-| `GS 16` | 2 | 1 gebraucht |
-| `GS 14` | 2 | 1 gebraucht |
-| `CD 4050BE TEX` | 1 | Reserve, U2 ist vorhanden |
-| `74HCT 08` | 1 | Reserve, U3 ist vorhanden |
-| `ANMAS MG81000N` | 1 | Werkzeug |
-| TPS63802-Modul (eBay) | 1 | |
+| `X7R-5 100N` | 10 | 5 needed |
+| `WL1C477M0811M` | 2 | 1 needed |
+| `RD1A108M1012M128` | 4 | 1 needed |
+| `METALL 10,0K` | 10 | 4 needed |
+| `METALL 2,40K` | 10 | 1 needed |
+| `1N 4148` | 5 | 2 needed |
+| `DIP DTS-61K` | 2 | 2 needed, **no spare** |
+| `GS 16` | 2 | 1 needed |
+| `GS 14` | 2 | 1 needed |
+| `CD 4050BE TEX` | 1 | spare, U2 on hand |
+| `74HCT 08` | 1 | spare, U3 on hand |
+| `ANMAS MG81000N` | 1 | tool |
+| TPS63802 module (eBay) | 1 | |
 
-Nicht mitbestellt, weil **vorhanden**: Stiftleiste 2,54 mm (für J2, J4, J5),
-Kurzschlussbrücke für J5 und die vier M2-Schrauben. Die Bestellung ist damit
-vollständig – es fehlt nichts mehr.
+Not ordered because **on hand**: 2.54 mm pin header (for J2, J4, J5),
+jumper for J5 and the four M2 screws. The order is thus complete – nothing
+is missing.
 
-## GPIO-Zuordnung (aus src/main.cpp)
+## GPIO assignment (from src/main.cpp)
 
-| GPIO | Funktion | Über welchen Levelshifter |
+| GPIO | Function | Via which level shifter |
 |---|---|---|
-| GPIO13 | Scan-Eingang der Haube (Interrupt, RISING) | U2 (4050), Gatter C (Pin 7 → 6) |
-| GPIO5  | LED-Status lesen (J1/1), Firmware `ledPin2` | U2 (4050), Gatter B (Pin 5 → 4) |
-| GPIO4  | LED-Status lesen (J1/2), Firmware `ledPin1` | U2 (4050), Gatter A (Pin 3 → 2) |
-| GPIO12 | Tastenemulation (J1/3), Firmware `buttonPin2` | U3 (HCT08), Gatter A (Pin 1+2 → 3) → D3 |
-| GPIO14 | Tastenemulation (J1/4), Firmware `buttonPin1` | U3 (HCT08), Gatter B (Pin 4+5 → 6) → D4 |
+| GPIO13 | hood scan input (interrupt, RISING) | U2 (4050), gate C (pin 7 → 6) |
+| GPIO5  | read LED state (J1/1), firmware `ledPin2` | U2 (4050), gate B (pin 5 → 4) |
+| GPIO4  | read LED state (J1/2), firmware `ledPin1` | U2 (4050), gate A (pin 3 → 2) |
+| GPIO12 | key emulation (J1/3), firmware `buttonPin2` | U3 (HCT08), gate A (pins 1+2 → 3) → D3 |
+| GPIO14 | key emulation (J1/4), firmware `buttonPin1` | U3 (HCT08), gate B (pins 4+5 → 6) → D4 |
+| GPIO2  | on-board status LED (active LOW) | – (internal to the ESP-12 module, no-connect) |
+| GPIO0  | flash button / Wi-Fi config reset at boot | – (local, SW2 + R2 via board-J5) |
+| CH_PD  | enable, must be HIGH at boot | – (local, R4) |
+| GPIO15 | boot strapping, must be LOW at boot | – (local, R3) |
+| GPIO16 | unused (no deep-sleep wake-up planned) | – |
+| GPIO9/GPIO10 | **do not use** – reserved on the ESP-12 for flash access (QIO) | – |
 
-> **Kanalzuordnung (Inbetriebnahme 2026-09-24):** Sowohl die beiden
-> LED-Kanäle als auch die beiden Tastenkanäle kommen gegenüber der
-> Lochraster-Firmware vertauscht an – Lüfter 1 wurde als „Timer“ erkannt,
-> „Licht an“ schaltete Stufe 2. Korrigiert in der Firmware durch Tausch von
-> `ledPin1/2` und `buttonPin1/2`; die Hardware ist unverändert.
-| GPIO2  | Onboard-Status-LED (active LOW) | – (nur intern im ESP-12-Modul, No-Connect) |
-| GPIO0  | Flash-Taster / WLAN-Config-Reset beim Boot | – (lokal, SW2 + R2 über Board-J5) |
-| CH_PD  | Enable, muss beim Boot HIGH sein | – (lokal, R4) |
-| GPIO15 | Boot-Strapping, muss beim Boot LOW sein | – (lokal, R3) |
-| GPIO16 | unbenutzt (kein Deep-Sleep-Wakeup vorgesehen) | – |
-| GPIO9/GPIO10 | **nicht verwenden** – bei ESP-12 intern für Flash-Zugriff (QIO) reserviert | – |
+> **Channel mapping (bring-up 2026-09-24):** both the two LED channels and
+> the two key channels arrive swapped compared to the perfboard firmware –
+> fan 1 was detected as "timer", "light on" switched fan level 2. Corrected
+> in the firmware by swapping `ledPin1/2` and `buttonPin1/2`; the hardware
+> is unchanged.
 
-## Stromversorgung und Masse
+## Power and ground
 
-Beide kommen **nicht** über das 8-polige Steuerkabel, sondern über den
-separaten Service-Anschluss der Haubenelektronik (im Blogartikel Markierung
-3 = Masse, 4 = Versorgung), abgegriffen mit einem gekürzten ISA-Bus-Slot:
+Neither comes through the 8-wire control cable, but through the separate
+service connector of the hood electronics (marked 3 = ground, 4 = supply in
+the blog post), tapped with a shortened ISA bus slot:
 
-* **ca. 4,8 V, belastbar mit ca. 500 mA** (experimentell mit Belastungs-
-  widerstand bestimmt)
-* Das RJ45-Kabel zwischen Haube und Frontpanel führt **keine Referenzmasse**.
-  Für das Frontpanel allein ist das nicht nötig, für Messung und aktive
-  Ansteuerung schon. Das Gehäuse als Bezugsmasse funktioniert nicht.
+* **about 4.8 V, able to supply about 500 mA** (determined experimentally
+  with a load resistor)
+* The RJ45 cable between hood and front panel carries **no reference
+  ground**. The front panel alone doesn't need it, measuring and actively
+  driving do. Using the enclosure as ground reference does not work.
 
-Daraus folgt für J1/J3: **dort liegen weder 5V_IN noch GND** – das ist
-korrekt so und kein Versehen.
+It follows for J1/J3: **neither 5V_IN nor GND is on these connectors** –
+that is correct and not an oversight.
 
-### Versorgungsnetze
+### Supply nets
 
-* `5V_IN` → J6/1, U4/VIN, U3/VCC (74HCT08 läuft auf 5 V), C5, C8
-* `VCC` (3,3 V) → U4/VOUT, U1, U2/VDD, R2, R4, R6, J2/4, C1, C3, C4, C6
-* `GND` → J6/2, gemeinsame Masse
-* Alle drei Netze tragen je ein `PWR_FLAG` (`#FLG01` auf GND, `#FLG02` auf
-  5V_IN); VCC wird vom `power_out`-Pin des Wandlermoduls getrieben.
+* `5V_IN` → J6/1, U4/VIN, U3/VCC (74HCT08 runs on 5 V), C5, C8
+* `VCC` (3.3 V) → U4/VOUT, U1, U2/VDD, R2, R4, R6, J2/4, C1, C3, C4, C6
+* `GND` → J6/2, common ground
+* Each net carries a `PWR_FLAG` (`#FLG01` on GND, `#FLG02` on 5V_IN); VCC is
+  driven by the `power_out` pin of the converter module.
 
-### Dimensionierung der Pufferung
+### Sizing the buffering
 
-Beim WiFi-Senden zieht der ESP kurzzeitig ~350 mA aus 3,3 V, was über den
-Wandler ~270 mA aus 4,9 V bedeutet. Die Quelle liefert 500 mA – **der Strom
-war also nie der Engpass.** Der Engpass war die *Untergrenze*: sackt die
-Eingangsspannung unter die minimale Eingangsspannung eines Buck-Moduls
-(4,5 – 6 V je nach Typ), fällt es aus der Regelung. Das ist der
-Brownout-Boot-Loop aus der Lochraster-Version.
+When transmitting over Wi-Fi, the ESP briefly draws ~350 mA from 3.3 V,
+which means ~270 mA from 4.9 V through the converter. The source delivers
+500 mA – **so current was never the bottleneck.** The bottleneck was the
+*lower limit*: if the input voltage sags below the minimum input voltage of
+a buck module (4.5 – 6 V depending on type), it drops out of regulation.
+That is the brownout boot loop of the perfboard version.
 
-**Mit dem TPS63802 (1,5 – 5,5 V) gibt es diese Kante nicht mehr**, und die
-Pufferung durfte deshalb am 2026-09-07 von 3300 µF auf **1000 µF** schrumpfen.
-Der Kondensator überbrückt jetzt nur noch die Regelzeit der Haubenversorgung,
-nicht mehr ein Dropout-Risiko. Nebeneffekt: C8 steht wieder aufrecht (12,5 mm
-statt 35 mm liegend) und der 13,5 × 39 mm große Streifen im Layout ist frei.
+**With the TPS63802 (1.5 – 5.5 V) this edge no longer exists**, so the
+buffering was allowed to shrink from 3300 µF to **1000 µF** on 2026-09-07.
+The capacitor now only bridges the response time of the hood supply, no
+longer a dropout risk. Side effect: C8 stands upright again (12.5 mm instead
+of 35 mm lying down) and the 13.5 × 39 mm strip in the layout is free.
 
-Deshalb ist die Pufferung auf beide Seiten verteilt (entschieden 2026-09-06):
+The buffering is therefore split across both sides (decided 2026-09-06):
 
-| Netz | Kondensatoren |
+| Net | Capacitors |
 |---|---|
-| `5V_IN` | C5 (100 nF) + **C8, 1000 µF/10 V** – puffert die 500-mA-Quelle |
-| `VCC` | C3/C4/C6 (100 nF) + **C1, 470 µF/10 V** – überbrückt die ~100 µs Regelzeit |
+| `5V_IN` | C5 (100 nF) + **C8, 1000 µF/10 V** – buffers the 500 mA source |
+| `VCC` | C3/C4/C6 (100 nF) + **C1, 470 µF/10 V** – bridges the ~100 µs response time |
 
-Die große Kapazität gehört bewusst **nicht** auf den Ausgang: dort reichen
-330–470 µF, und sehr große Werte können beim Einschalten die Strombegrenzung
-des Buck-Moduls auslösen.
+The large capacitance deliberately does **not** go on the output: 330–470 µF
+is enough there, and very large values can trip the converter's current
+limit at power-up.
 
-## Reset- und Flash-Beschaltung
+## Reset and flash circuitry
 
-| Netz | Bauteile |
+| Net | Parts |
 |---|---|
-| `/RST` | U1/1, R6 (Pull-up), C7 (Kopplung von FTDI-DTR), SW1, J4 |
-| `Net-(U1-EN)` | U1/3, R4 (eigener Pull-up) |
-| `/GPIO0` | U1/18, SW2, Board-J5 Pin 2 |
+| `/RST` | U1/1, R6 (pull-up), C7 (coupling from FTDI-DTR), SW1, J4 |
+| `Net-(U1-EN)` | U1/3, R4 (own pull-up) |
+| `/GPIO0` | U1/18, SW2, board-J5 pin 2 |
 | `/FTDI_DTR` | J2/1, C7 |
 
-**EN und RST haben bewusst getrennte Pull-ups.** Ein gemeinsamer Widerstand
-würde beide Pins zu einem Netz verschmelzen: SW1 und J4 würden dann den Chip
-abschalten statt zurückzusetzen, und ein späteres RC-Glied auf EN würde über
-den kapazitiven Teiler mit C7 den Auto-Reset unbrauchbar machen.
+**EN and RST deliberately have separate pull-ups.** A shared resistor would
+merge both pins into one net: SW1 and J4 would then switch the chip off
+instead of resetting it, and a later RC network on EN would render the
+auto-reset useless through the capacitive divider with C7.
 
-### Auto-Reset über J2
+### Auto-reset via J2
 
-esptool fährt beim Verbinden die Sequenz `DTR=0/RTS=1 → 100 ms → DTR=1/RTS=0`.
-J2 führt nur **DTR** heraus (Pin 5 ist beim verwendeten FTDI-Adapter CTS, ein
-Eingang des Adapters, und kann nichts treiben). Damit gilt:
+On connecting, esptool runs the sequence `DTR=0/RTS=1 → 100 ms → DTR=1/RTS=0`.
+J2 only brings out **DTR** (pin 5 is CTS on the adapter used, an input of
+the adapter, and can't drive anything). Therefore:
 
-* **Auto-Reset funktioniert** – die DTR-Flanke wird über C7 auf RST gekoppelt.
-* **Auto-Flash funktioniert nicht** – GPIO0 wird nicht ferngesteuert.
-* Nach dem Flashen bleibt der ESP im Bootloader, weil esptools `hard_reset`
-  ausschließlich RTS schaltet. SW1 drücken (oder auf die DTR-Flanke beim
-  Schließen des Ports hoffen).
+* **Auto-reset works** – the DTR edge is coupled to RST via C7.
+* **Auto-flash does not work** – GPIO0 is not remote-controlled.
+* After flashing, the ESP stays in the bootloader because esptool's
+  `hard_reset` only toggles RTS. Press SW1 (or hope for the DTR edge when
+  the port closes).
 
-Voller Auto-Flash würde einen Adapter mit RTS **und** das kreuzgekoppelte
-NPN-Paar der NodeMCU-Schaltung erfordern. Bewusst nicht umgesetzt: seriell
-geflasht wird nur beim Erstflash und zur Rettung, im Alltag läuft OTA
-(`[env:nodemcuv2-ota]`).
+Full auto-flash would require an adapter with RTS **and** the cross-coupled
+NPN pair of the NodeMCU circuit. Deliberately not implemented: serial
+flashing is only used for the first flash and for recovery; day to day OTA
+is used (`[env:nodemcuv2-ota]`).
 
-### Jumper Board-J5 (Flash/Run)
+### Board-J5 jumper (flash/run)
 
-| Stellung | Wirkung |
+| Position | Effect |
 |---|---|
-| **1–2 (Normalbetrieb)** | R2 zieht GPIO0 auf 3,3 V – der ESP bootet die Firmware |
-| 2–3 | GPIO0 fest auf GND – der ESP bootet in den Flash-Mode |
+| **1–2 (normal operation)** | R2 pulls GPIO0 to 3.3 V – the ESP boots the firmware |
+| 2–3 | GPIO0 tied to GND – the ESP boots into flash mode |
 
-Der Jumper steht im Normalbetrieb auf **1–2**. Der Pull-up R2 wirkt dadurch
-nur bei gestecktem Jumper; ohne Jumper floatet GPIO0 und der Boot ist nicht
-zuverlässig. Das ist bewusst so gewählt (ein Bauteil statt zwei, Flash-Mode
-ohne Tasterakrobatik) – der Jumper muss dafür immer stecken.
+In normal operation the jumper is on **1–2**. The pull-up R2 therefore only
+acts when the jumper is fitted; without the jumper GPIO0 floats and boot is
+unreliable. That is a deliberate choice (one part instead of two, flash mode
+without button acrobatics) – the jumper must always be fitted.
 
-## Unbenutzte Gatter (wichtig!)
+## Unused gates (important!)
 
-CMOS- und HCT-Eingänge dürfen **nicht floaten** (Oszillation, Querstrom,
-Störungen). Deshalb:
+CMOS and HCT inputs must **not float** (oscillation, shoot-through current,
+noise). Therefore:
 
-* U2 (4050): die drei unbenutzten Buffer D/E/F – **Eingänge (Pin 9, 11, 14)
-  fest auf GND**, Ausgänge (Pin 10, 12, 15) offen mit No-Connect-Flag.
-* U3 (74HCT08): die beiden unbenutzten Gatter C/D – **beide Eingänge je Gatter
-  (Pin 9+10 bzw. 12+13) fest auf GND**, Ausgänge (Pin 8, 11) offen mit No-Connect.
+* U2 (4050): the three unused buffers D/E/F – **inputs (pins 9, 11, 14) tied
+  to GND**, outputs (pins 10, 12, 15) open with no-connect flag.
+* U3 (74HCT08): the two unused gates C/D – **both inputs of each gate
+  (pins 9+10 and 12+13) tied to GND**, outputs (pins 8, 11) open with
+  no-connect.
 
-## Steckerbelegung J1 / J3 (je 8-polig)
+## J1 / J3 pinout (8 pins each)
 
-Im Original wurde ein altes Netzwerkkabel verwendet. Aderfarben nach **T568B**.
-Die Platine klinkt sich in die vorhandene Verbindung Haube ↔ Frontpanel ein.
+The original used an old network cable. Wire colours per **T568B**. The
+board taps into the existing hood ↔ front panel connection.
 
-| Pin | Netz | J1 (Haube) | J3 (Frontpanel) | T568B |
+| Pin | Net | J1 (hood) | J3 (front panel) | T568B |
 |---|---|---|---|---|
-| 1 | `LED_CH_2` | LED-Status Haube-J7 → U2/5 → GPIO5 | über D1 (Anode) auf dasselbe Netz | orange-weiß |
-| 2 | `LED_CH_1` | LED-Status Haube-J8 → U2/3 → GPIO4 | über D2 (Anode) auf dasselbe Netz | orange |
-| 3 | `BTN_CH_1` | Tastenemulation, von U3/3 über D3 getrieben | durchverbunden | grün-weiß |
-| 4 | `BTN_CH_2` | Tastenemulation, von U3/6 über D4 getrieben | durchverbunden | blau |
-| 5 | – | ↔ J3/5 | ↔ J1/5 | blau-weiß |
-| 6 | – | ↔ J3/6 | ↔ J1/6 | grün |
-| 7 | – | ↔ J3/7 | ↔ J1/7 | braun-weiß |
-| 8 | `SCAN` | Scan-Bus → R5 (Pull-down) → U2/7 → GPIO13 | durchverbunden | braun |
+| 1 | `LED_CH_2` | LED state hood-J7 → U2/5 → GPIO5 | via D1 (anode) onto the same net | orange-white |
+| 2 | `LED_CH_1` | LED state hood-J8 → U2/3 → GPIO4 | via D2 (anode) onto the same net | orange |
+| 3 | `BTN_CH_1` | key emulation, driven by U3/3 via D3 | connected through | green-white |
+| 4 | `BTN_CH_2` | key emulation, driven by U3/6 via D4 | connected through | blue |
+| 5 | – | ↔ J3/5 | ↔ J1/5 | blue-white |
+| 6 | – | ↔ J3/6 | ↔ J1/6 | green |
+| 7 | – | ↔ J3/7 | ↔ J1/7 | brown-white |
+| 8 | `SCAN` | scan bus → R5 (pull-down) → U2/7 → GPIO13 | connected through | brown |
 
-Pin 5–7 sind reine Durchleitungen zwischen Haube und Frontpanel; die Platine
-greift sie nicht ab. **Weder 5V noch GND liegen auf diesem Stecker**
-(siehe "Stromversorgung und Masse").
+Pins 5–7 are pure pass-throughs between hood and front panel; the board does
+not tap them. **Neither 5V nor GND is on this connector** (see "Power and
+ground").
 
-D1/D2 (1N4148, Anode an J3, Kathode am jeweiligen LED-Netz) saßen schon auf
-der Lochrasterplatine genau so auf den LED-Leitungen (per Fritzing-Datei
-`fritzing/abzugshaube.fzz` bestätigt, 2026-09-24). Mit der Tastenemulation
-haben sie nichts zu tun.
+D1/D2 (1N4148, anode at J3, cathode at the respective LED net) already sat
+exactly like this on the LED lines of the perfboard version (confirmed from
+the Fritzing file `fritzing/abzugshaube.fzz`, 2026-09-24). They have nothing
+to do with the key emulation.
 
-### Tastenemulation: U3 nur mit Ausgangsdioden (D3/D4) und Pull-downs (R7/R8)
+### Key emulation: U3 only with output diodes (D3/D4) and pull-downs (R7/R8)
 
-Die Tastenleitungen sind Teil der Tastenmatrix zwischen Haube und Frontpanel.
-Die Platine darf sie nur **hochziehen** (Taste drücken) oder **völlig in Ruhe
-lassen** – nie auf LOW halten.
+The key lines are part of the key matrix between hood and front panel. The
+board may only **pull them up** (press a key) or **leave them completely
+alone** – never hold them LOW.
 
-* **U3 direkt an J1/3+4 (Rev. 0.2) funktioniert nicht:** Der 74HCT08 hat
-  Gegentaktausgänge und treibt die Leitung immer HIGH oder LOW; bei
-  floatenden Eingängen (ESP-Boot) zufällig. Folge: Boot-Loop des ESP,
-  Phantomtasten an der Haube (Stufe 3 + Filter = beide Kanäle in Scan-Zeile
-  2), Haube reagiert nicht mehr.
-* **Direkter Draht oder Serienwiderstand (1–2,4 kΩ) statt U3 funktioniert
-  ebenfalls nicht:** Das Frontpanel glimmt, der ESP hängt sich auf Haubenstrom
-  auf, mit Widerstand geht die Haube beim Start in einen Fehlercode. Solange
-  die 3,3-V-Schiene beim Einschalten noch bei 0 V steht, klemmen die
-  ESP-Schutzdioden die Leitungen; umgekehrt speisen die 5-V-Impulse in VCC
-  zurück. (Die Lochrasterplatine hatte GPIO12/14 direkt verdrahtet und lief
-  damit jahrelang – außerhalb der Spezifikation.)
-* **Lösung (Rev. 0.3):** D3/D4 (1N4148) in Serie hinter U3-Pin 3 bzw. 6,
-  Anode an U3, Kathode an BTN_CH. HIGH ≈ 4,3 V drückt, LOW sperrt die Diode.
-  R7/R8 (10 kΩ) ziehen die U3-Eingänge nach GND, bis die Firmware läuft.
-  Die Firmware treibt GPIO12/14 stets aktiv: LOW = loslassen, HIGH = drücken,
-  schon am Anfang von `setup()` auf LOW.
-* **Auf den gefertigten Rev.-0.2-Platinen** wird das nachgerüstet: am
-  74HCT08 Pin 3 und 6 aus dem Sockel biegen, Diode vom gebogenen Pin (Anode)
-  in die Sockelbuchse (Kathode) stecken, 10 kΩ auf der Unterseite zwischen
-  Sockelpin 2↔7 und 4↔7.
+* **U3 directly on J1/3+4 (rev. 0.2) does not work:** the 74HCT08 has
+  push-pull outputs and always drives the line HIGH or LOW; with floating
+  inputs (ESP boot) randomly. Result: ESP boot loop, phantom keys on the
+  hood (fan level 3 + filter = both channels in scan row 2), hood stops
+  responding.
+* **A direct wire or series resistor (1–2.4 kΩ) instead of U3 doesn't work
+  either:** the front panel glows faintly, the ESP hangs on hood power, with
+  a resistor the hood goes into an error code at start-up. While the 3.3 V
+  rail is still at 0 V at power-up, the ESP protection diodes clamp the
+  lines; conversely the 5 V pulses feed back into VCC. (The perfboard had
+  GPIO12/14 wired directly and ran that way for years – outside the
+  specification.)
+* **Solution (rev. 0.3):** D3/D4 (1N4148) in series after U3 pins 3 and 6,
+  anode at U3, cathode at BTN_CH. HIGH ≈ 4.3 V presses, LOW blocks the
+  diode. R7/R8 (10 kΩ) pull the U3 inputs to GND until the firmware runs.
+  The firmware always drives GPIO12/14 actively: LOW = release, HIGH =
+  press, set LOW right at the start of `setup()`.
+* **On the fabricated rev. 0.2 boards** this is retrofitted: bend pins 3
+  and 6 of the 74HCT08 out of the socket, insert a diode from the bent pin
+  (anode) into the socket contact (cathode), and solder 10 kΩ on the bottom
+  side between socket pins 2↔7 and 4↔7.
 
-Dass das Haubenlicht beim Einschalten angeht, ist ein Verhalten der Haube
-selbst (tritt auch ohne Platine auf).
+The hood light turning on at power-up is behaviour of the hood itself (it
+also happens without the board).
 
-## Bekannte Fallstricke aus der Lochraster-Version (im Redesign vermieden)
+## Known pitfalls of the perfboard version (avoided in the redesign)
 
-1. **GPIO0 ohne Pull-up** war die Hauptursache für sporadische Bootfehler.
-   → R2 eingeplant, wirkt über den Jumper Board-J5 in Stellung 1–2.
-2. **GPIO12/14 direkt an den 5-V-Tastenleitungen** – außerhalb der
-   ESP-Spezifikation. → U3 mit D3/D4 und R7/R8, siehe „Tastenemulation“.
-   (Frühere Annahme, D1/D2 hätten die Tastenleitungen geschützt, war falsch:
-   sie sitzen auf den LED-Leitungen.)
-3. **Reset-Taster war ursprünglich an GPIO16 statt RST** verdrahtet –
-   im Redesign SW1 direkt an RST/EXT_RST.
-4. **Kein definierter Power-on-Reset** – Wandler-Anlaufverhalten konnte zu
-   instabilem Boot führen. → Behoben durch den Buck-Boost-Wandler U4 (regelt
-   ab 1,5 V) und die aufgeteilte Pufferung C8/C1. Ein zeitweise erwogener
-   Supervisor-IC (U5, MCP130) wurde deshalb nicht eingebaut; die
-   Inbetriebnahme 2026-09 lief ohne Brownout-Resets.
-5. **Bulk-Elko zu klein/unklar dimensioniert und auf der falschen Seite**
-   (Originalwert im Artikel: 800 µF, gemessen später 3,88 mF) → im Redesign
-   aufgeteilt: C8 (1000 µF) auf `5V_IN`, C1 (470 µF) auf `VCC`.
-   Siehe "Dimensionierung der Pufferung".
-6. **RST-Auto-Reset-Kondensator:** jetzt C7, 100 nF Keramik (unpolarisiert).
-   Der frühere 4,7-µF-Elko (C2) war doppelt falsch – zu große Zeitkonstante
-   für den 100-ms-Reset-Impuls von esptool, und ein Koppelkondensator wird
-   beidseitig belastet, taugt also nicht polarisiert. Zusammen mit R6 (10 kΩ)
-   ergibt sich τ = 1 ms.
+1. **GPIO0 without pull-up** was the main cause of sporadic boot failures.
+   → R2 added, active via the board-J5 jumper in position 1–2.
+2. **GPIO12/14 directly on the 5 V key lines** – outside the ESP
+   specification. → U3 with D3/D4 and R7/R8, see "Key emulation".
+   (The earlier assumption that D1/D2 protected the key lines was wrong:
+   they sit on the LED lines.)
+3. **The reset button was originally wired to GPIO16 instead of RST** – in
+   the redesign SW1 goes directly to RST/EXT_RST.
+4. **No defined power-on reset** – converter start-up behaviour could lead
+   to unstable boot. → Solved by the buck-boost converter U4 (regulates from
+   1.5 V) and the split buffering C8/C1. A supervisor IC (U5, MCP130) that
+   was considered for a while was therefore not fitted; bring-up in 2026-09
+   ran without brownout resets.
+5. **Bulk capacitor too small / unclearly sized and on the wrong side**
+   (original value in the post: 800 µF, later measured 3.88 mF) → split in
+   the redesign: C8 (1000 µF) on `5V_IN`, C1 (470 µF) on `VCC`. See "Sizing
+   the buffering".
+6. **RST auto-reset capacitor:** now C7, 100 nF ceramic (non-polarised). The
+   former 4.7 µF electrolytic (C2) was wrong twice over – too large a time
+   constant for esptool's 100 ms reset pulse, and a coupling capacitor sees
+   voltage in both directions, so a polarised one is unsuitable. Together
+   with R6 (10 kΩ) this gives τ = 1 ms.
 
-## Mechanik: Gehäuse und Platinenabmessungen
+## Mechanics: enclosure and board dimensions
 
-Vorgaben aus dem Gehäuse (Stand 2026-09-07):
+Requirements from the enclosure (as of 2026-09-07):
 
-| Größe | Wert |
+| Item | Value |
 |---|---|
-| Maximale Platinenabmessung | **55 × 80 mm** |
-| Befestigungsbohrungen | 4 Stück, Rastermaß **50 × 50 mm** (vertikal und horizontal gleich) |
-| Sockel-Innendurchmesser (Gewinde) | 1,8 mm |
-| Sockel-Außendurchmesser | 5,0 mm |
-| Erste Bohrung von der Oberkante | 3,5 mm ab Bohrungsmitte (= 1 mm Rand vom Sockelrand zur Platinenkante) |
+| Maximum board size | **55 × 80 mm** |
+| Mounting holes | 4, grid **50 × 50 mm** (same vertically and horizontally) |
+| Standoff inner diameter (thread) | 1.8 mm |
+| Standoff outer diameter | 5.0 mm |
+| First hole from the top edge | 3.5 mm from hole centre (= 1 mm from standoff edge to board edge) |
 
-### Orientierung auf der Platine
+### Orientation on the board
 
-Die Outline in KiCad liegt **quer**: `(0,0) → (80,0) → (80,55) → (0,55)`, die
-80-mm-Kante läuft also entlang x. Das ist dieselbe Platine wie „55 × 80 hoch",
-nur um 90° gedreht. Damit ergeben sich die Bohrungsmitten:
+The outline in KiCad lies **landscape**: `(0,0) → (80,0) → (80,55) → (0,55)`,
+so the 80 mm edge runs along x. This is the same board as "55 × 80
+portrait", just rotated by 90°. This gives the hole centres:
 
 ```
-   x = 3,5 und 53,5 mm      (Langseite 80 mm, 1 mm Rand zum Sockel)
-   y = 2,5 und 52,5 mm      (Schmalseite 55 mm, Sockel bündig zur Kante)
+   x = 3.5 and 53.5 mm      (long side 80 mm, 1 mm margin to the standoff)
+   y = 2.5 and 52.5 mm      (short side 55 mm, standoff flush with the edge)
 ```
 
-**Der 1-mm-Rand gilt nur an der Langseite** (bestätigt 2026-09-07). An der
-Schmalseite liegt der Sockel bündig auf der Platinenkante:
+**The 1 mm margin only applies to the long side** (confirmed 2026-09-07). On
+the short side the standoff sits flush with the board edge:
 
-| Richtung | Bohrungsmitte | Sockel (⌀5) | Rand zur Kante |
+| Direction | Hole centre | Standoff (⌀5) | Margin to edge |
 |---|---|---|---|
-| Langseite (80 mm, x) | 3,5 / 53,5 | 1,0…6,0 bzw. 51,0…56,0 | **1 mm** |
-| Schmalseite (55 mm, y) | 2,5 / 52,5 | 0…5 bzw. 50…55 | **0 mm, bündig** |
+| long side (80 mm, x) | 3.5 / 53.5 | 1.0…6.0 and 51.0…56.0 | **1 mm** |
+| short side (55 mm, y) | 2.5 / 52.5 | 0…5 and 50…55 | **0 mm, flush** |
 
-Das ist so gewollt und kein Fehler.
+That is intentional, not a mistake.
 
-### Bauhöhe (Vorgabe 2026-09-07)
+### Component height (requirement 2026-09-07)
 
-Die Innenhöhe des Gehäuses beträgt **max. 20 mm inklusive Platine und
-Montagesockeln**. Als Praxiswert gilt: **14 mm Bauteilhöhe über der Platine
-sind sicher, darüber wird es unsicher.**
+The inner height of the enclosure is **max. 20 mm including board and
+standoffs**. Rule of thumb: **14 mm component height above the board is
+safe, above that it gets risky.**
 
-| Bauteil | Höhe über PCB | |
+| Part | Height above PCB | |
 |---|---|---|
-| C8 1000 µF/10 V, D10 stehend | 12,5 mm | ok |
-| U4, TPS63802-Modul flach aufgelötet | 3,5 mm | ok |
-| Gegenstecker (Dupont-Buchse) auf vertikaler Stiftleiste | ~14,7 mm | **grenzwertig** |
-| C1 470 µF/10 V, D8 | ~11,5 mm | ok |
-| U2/U3, DIP im Sockel | ~9 mm | ok |
-| Stiftleiste 2,54 vertikal, ohne Gegenstecker | 8,5 mm | ok |
-| Jumper-Shunt auf J5 | ~7,5 mm | ok |
-| Scheibenkondensator 100 nF | 5–7 mm | ok |
-| SW1/SW2 (6-mm-Taster) | ~5 mm | ok |
+| C8 1000 µF/10 V, D10 upright | 12.5 mm | ok |
+| U4, TPS63802 module soldered flat | 3.5 mm | ok |
+| U4 on pin headers | ~6–7 mm | ok |
+| Mating connector (Dupont socket) on a vertical pin header | ~14.7 mm | **marginal** |
+| C1 470 µF/10 V, D8 | ~11.5 mm | ok |
+| D3/D4, R7/R8 upright | ~9–11 mm | ok |
+| U2/U3, DIP in socket | ~9 mm | ok |
+| Vertical 2.54 mm pin header, no mating connector | 8.5 mm | ok |
+| Jumper on J5 | ~7.5 mm | ok |
+| Ceramic disc capacitor 100 nF | 5–7 mm | ok |
+| SW1/SW2 (6 mm buttons) | ~5 mm | ok |
 | U1 (ESP-12E) | ~3 mm | ok |
-| Widerstände, Dioden liegend | 2,5 mm | ok |
+| Resistors, diodes lying flat | 2.5 mm | ok |
 
-Damit ist die Höhe ein **Auswahlkriterium für U4**: das Wandlermodul darf
-inklusive Stiftleiste nicht über 14 mm bauen. Zusammen mit der schon
-bekannten Anforderung (min. Vin ≤ 4,5 V, ≥ 500 mA, dreipolig im 2,54-Raster)
-scheidet die gesamte OKI-78SR- und R-78E-Familie aus – deren minimale
-Eingangsspannung liegt bei 4,75 V bzw. 7 V.
+So height is a **selection criterion for U4**: the converter module must
+not exceed 14 mm including pin header. Together with the already known
+requirements (min. Vin ≤ 4.5 V, ≥ 500 mA, three-pin on 2.54 mm grid), the
+whole OKI-78SR and R-78E families are ruled out – their minimum input
+voltage is 4.75 V and 7 V respectively.
 
-### Schrauben und Bohrungsdurchmesser (entschieden 2026-09-07)
+### Screws and hole diameter (decided 2026-09-07)
 
-| Größe | Wert |
+| Item | Value |
 |---|---|
-| Schraube | **M2** |
-| Kopfdurchmesser | **4,0 mm** |
-| Platinenbohrung | **2,2 mm** |
+| Screw | **M2** |
+| Head diameter | **4.0 mm** |
+| Board hole | **2.2 mm** |
 | Footprint | `MountingHole:MountingHole_2.2mm_M2` |
 
-Der Footprint ist ein reines `np_thru_hole` – Bohrung 2,2 mm, **kein Kupfer**,
-kein Netz. Er bringt zwei Kreise mit, die den Freiraum dokumentieren:
-⌀4,40 mm auf `Cmts.User` (Schraubenkopf) und ⌀4,90 mm als `F.CrtYd`
-(Courtyard). Eine zusätzliche Sperrfläche ist deshalb nicht nötig – der
-Courtyard hält Bauteile automatisch weg und wird von der DRC geprüft.
+The footprint is a pure `np_thru_hole` – 2.2 mm hole, **no copper**, no net.
+It comes with two circles documenting the clearance: ⌀4.40 mm on
+`Cmts.User` (screw head) and ⌀4.90 mm as `F.CrtYd` (courtyard). An extra
+keep-out is therefore not needed – the courtyard keeps parts away
+automatically and is checked by DRC.
 
-Der ⌀5-Sockel ist ein *bestückungsseitig irrelevantes* Maß: er sitzt unter der
-Platine, und dort liegen bei dieser reinen THT-Bestückung nur Lötaugen. Auf der
-Oberseite begrenzt der Schraubenkopf mit ⌀4 mm, und den deckt der ⌀4,9-Courtyard
-mit 0,45 mm Reserve ab.
+The ⌀5 standoff is *irrelevant on the component side*: it sits under the
+board, and there are only solder pads there with this pure THT assembly. On
+top, the screw head of ⌀4 mm is the limit, and the ⌀4.9 courtyard covers it
+with 0.45 mm margin.
 
-An der Schmalseite reicht die Bohrung von y = 1,4 bis 3,6 mm; es bleibt ein
-1,4 mm breiter Steg zur Platinenkante stehen. Mit den früher eingesetzten
-3,2 mm (M3) wären es nur 0,9 mm gewesen.
+On the short side the hole spans y = 1.4 to 3.6 mm; a 1.4 mm wide web
+remains to the board edge. With the 3.2 mm (M3) holes used earlier it would
+have been only 0.9 mm.
 
-## Platzierung und Routing (Stand 2026-09-11, 3. Durchgang)
+## Placement and routing
 
-Das alte Board (90 × 70 mm, Netznamen einer weit zurückliegenden Revision) war
-nicht zu retten und wurde vollständig neu aufgebaut. Die Leiterplatte ist
-inzwischen vollständig geroutet; auf **B.Cu** liegt die gefüllte
-GND-Rückseitenfläche `GND_BACKPLANE` (0,6 mm Randabstand, 0,3 mm
-Kupferabstand, thermische Anbindung mit 0,6 mm Speichenbreite).
-Nach dem Füllen der Fläche wurden 22 konfliktfreie Signal- und
-Versorgungssegmente von B.Cu auf F.Cu gelegt, darunter die direkten
-J1↔J3-Verbindungen für `Net-(J1-Pin_5)` bis `Net-(J1-Pin_7)`. B.Cu bleibt
-für unvermeidbare Durchleitungen und die GND-Fläche reserviert; weitere
-Layerwechsel werden nicht blind erzwungen, wenn sie bestehende F.Cu-Netze
-kreuzen würden.
-Die redundanten GND-Leiterbahnen zwischen durchkontaktierten GND-Pads wurden
-anschließend entfernt. Die einzige verbleibende F.Cu-GND-Verbindung ist die
-notwendige Führung vom SMD-GND-Pad 15 von U1 zur GND-Durchkontaktierung; alle
-anderen GND-Pads hängen direkt an `GND_BACKPLANE`.
+The old board (90 × 70 mm, net names from a long-gone revision) could not
+be saved and was rebuilt from scratch. The board is fully routed; on
+**B.Cu** there is the filled GND back plane `GND_BACKPLANE` (0.6 mm edge
+clearance, 0.3 mm copper clearance, thermal relief with 0.6 mm spokes).
+After filling the plane, 22 conflict-free signal and supply segments were
+moved from B.Cu to F.Cu, including the direct J1↔J3 connections for
+`Net-(J1-Pin_5)` to `Net-(J1-Pin_7)`. B.Cu remains reserved for unavoidable
+crossings and the GND plane; further layer changes are not forced blindly if
+they would cross existing F.Cu nets.
+Redundant GND tracks between plated GND pads were then removed. The only
+remaining F.Cu GND connection is the necessary route from SMD GND pad 15 of
+U1 to the GND via; all other GND pads connect directly to `GND_BACKPLANE`.
 
-Der dritte Durchgang war nötig, weil C8 durch die Wahl des TPS63802 von
-3300 µF liegend auf 1000 µF stehend geschrumpft ist und U4 dafür von 82 auf
-325 mm² gewachsen ist.
+The third placement pass (2026-09-11) was needed because choosing the
+TPS63802 shrank C8 from 3300 µF lying down to 1000 µF upright, while U4 grew
+from 82 to 325 mm².
 
-### Zwei Entscheidungen, die die Platzierung bestimmen
+### Two decisions that drive the placement
 
-* **J1, J3 und J6 werden nicht gesteckt, sondern direkt verlötet.** Eine
-  aufgesteckte Dupont-Buchse baut allein ~14,7 mm, mit Kabelbogen darüber real
-  18–20 mm; das passt nicht unter den Deckel (Limit 14 mm). Die Pads der
-  vertikalen Stiftleisten bleiben im Layout stehen, die Leisten werden nur
-  nicht bestückt – die Adern gehen direkt in die Bohrungen. J2 (FTDI) und J4
-  (Reset) bleiben steckbar, die werden ohnehin nur bei offenem Gehäuse benutzt.
-* **U4 belegt 25,8 × 13,0 mm.** Seit 2026-09-11 steht dort der echte
-  Footprint (hochkant, 270°: **VIN oben, VOUT unten**), der Platzhalter auf
-  `Cmts.User` ist entfallen – siehe Abschnitt U4.
+* **J1, J3 and J6 are not plugged but soldered directly.** A Dupont socket
+  alone is ~14.7 mm tall, with a cable bend on top really 18–20 mm; that
+  doesn't fit under the lid (limit 14 mm). The pads of the vertical pin
+  headers remain in the layout, the headers are just not fitted – the wires
+  go straight into the holes. J2 (FTDI) and J4 (reset) remain pluggable;
+  they are only used with the enclosure open anyway.
+* **U4 occupies 25.8 × 13.0 mm.** Since 2026-09-11 the real footprint is
+  there (portrait, 270°: **VIN at the top, VOUT at the bottom**), the
+  placeholder on `Cmts.User` is gone – see section U4.
 
-### Zonen
+### Zones
 
-Stand Rev. 0.3 (2026-09-26), Blick auf die Bestückungsseite:
+As of rev. 0.3 (2026-09-26), looking at the component side:
 
-| Bereich | Inhalt |
+| Area | Contents |
 |---|---|
-| Links Mitte | **U1** (ESP-12E), Antenne an der linken Schmalseite mit Keep-out-Zone |
-| Links oben | J2 (FTDI), C7, SW1 (Reset), J4, R3 |
-| Links unten | R4, R6, R2, SW2 (Flash), J5, TP2 (GND), TP4 (3,3 V) |
-| Oben Mitte | **U2** (4050), C4, TP5 (SCAN), TP6 (GND), C8 |
-| Mitte | C3, C1, darunter **U4** (Wandlermodul) und C6 |
-| Rechts oben | R5, **J3**, **J1**, D1, D2; Kabelbinder-Bohrungen H1/H2 |
-| Rechts unten | J6, TP3 (5 V), TP1 (GND), D3/D4/R7/R8 stehend, **U3** (74HCT08), C5; H3/H4 |
+| left middle | **U1** (ESP-12E), antenna at the left short edge with keep-out zone |
+| top left | J2 (FTDI), C7, SW1 (reset), J4, R3 |
+| bottom left | R4, R6, R2, SW2 (flash), J5, TP2 (GND), TP4 (3.3 V) |
+| top middle | **U2** (4050), C4, TP5 (SCAN), TP6 (GND), C8 |
+| middle | C3, C1, below them **U4** (converter module) and C6 |
+| top right | R5, **J3**, **J1**, D1, D2; cable-tie holes H1/H2 |
+| bottom right | J6, TP3 (5 V), TP1 (GND), D3/D4/R7/R8 upright, **U3** (74HCT08), C5; H3/H4 |
 
-Die Kabelführung an H1–H4 ist als Sperrfläche `Kabelmontage` bzw.
-`Kabelmontage_1` für Footprints markiert.
+The cable routing at H1–H4 is marked as a footprint keep-out
+`Kabelmontage` / `Kabelmontage_1` ("cable mounting").
 
-Abstände der Abblockkondensatoren zu ihrem Versorgungspin: C3 → U1/8 = 3,4 mm,
-C4 → U2/1 = 3,5 mm, C5 → U3/14 = 3,4 mm.
+Distances of the decoupling capacitors to their supply pin: C3 → U1/8 =
+3.4 mm, C4 → U2/1 = 3.5 mm, C5 → U3/14 = 3.4 mm.
 
-Mit dem echten Footprint (2026-09-11) sitzen die Anschlüsse fest: VIN auf
-(60,10 | 62,64 / 43,22), VOUT auf (60,10 | 62,64 / 66,08), GND je zweimal auf
-x 52,48 / 55,02 in beiden Reihen. **C8 steht damit 7,7 mm über dem
-Wandlereingang** – für den 1000-µF-Puffer gut genug, zumal das Modul einen
-eigenen 100-µF-Eingangskondensator mitbringt und C8 reiner Energiespeicher für
-die Millisekundenskala ist.
+With the real footprint (2026-09-11) the connections are fixed: VIN at
+(60.10 | 62.64 / 43.22), VOUT at (60.10 | 62.64 / 66.08), GND twice each at
+x 52.48 / 55.02 in both rows. **C8 therefore sits 7.7 mm above the converter
+input** – good enough for the 1000 µF buffer, especially as the module
+brings its own 100 µF input capacitor and C8 is pure energy storage on the
+millisecond scale.
 
-Offen bleibt die **Ausgangsseite**: C6 (100 nF) liegt nach der Verschiebung
-vom 2026-09-11 nur noch 3,6 mm von den VOUT-Pads entfernt und ist damit
-erledigt; C1 (470 µF) sind es weiterhin 19,5 mm.
-Das ist der angekündigte Nachzug der U4-Umgebung – er steht noch aus und
-bleibt als Optimierungspunkt für eine spätere Platzierungsrevision bestehen.
+The **output side** remains open: after the move on 2026-09-11, C6 (100 nF)
+is only 3.6 mm from the VOUT pads and thus done; C1 (470 µF) is still
+19.5 mm away. That is the announced follow-up of the U4 surroundings – it is
+still pending and remains an optimisation item for a later placement
+revision.
 
-Damit der 13,0 mm breite Körper überhaupt zwischen C6 und TP1 passt, sind am
-2026-09-11 **C6 um 1,2 mm und TP2/TP4 um je 1,0 mm nach links** gerückt; C8s
-Referenztext musste aus dem Modulumriss weichen. Danach: Courtyards frei,
-Silk frei.
+To make the 13.0 mm wide body fit between C6 and TP1 at all, **C6 moved
+1.2 mm and TP2/TP4 1.0 mm each to the left** on 2026-09-11; C8's reference
+text had to move out of the module outline. Afterwards: courtyards clear,
+silkscreen clear.
 
-### Wie platziert wurde
+### How the placement was done
 
-Verankert von Hand: U1 (Antenne an der Kante), U2/U3, J1/J3 (Pin an Pin
-gegenüber, damit die sechs Durchleitungen gerade Bahnen werden) und U4. Der
-Rest per Skript, mit Kosten = Summe der **Pad-zu-Pad-Abstände** je Netz;
-GND, VCC und 5V_IN sind ausgenommen, weil globale Netze kein Ortssignal geben.
-Abblock- und Pufferkondensatoren hängen stattdessen mit hohem Gewicht an ihrem
-Versorgungspin. Danach Verbesserungsdurchläufe bis zur Konvergenz.
+Anchored by hand: U1 (antenna at the edge), U2/U3, J1/J3 (pin facing pin so
+the six pass-throughs become straight tracks) and U4. The rest by script,
+with cost = sum of **pad-to-pad distances** per net; GND, VCC and 5V_IN are
+excluded because global nets give no locality signal. Decoupling and buffer
+capacitors are instead tied with a high weight to their supply pin. Then
+improvement passes until convergence.
 
-### Prüfstand
+### Checks
 
 ```
-kicad-cli sch erc  --severity-all            → 0 Verstöße
-kicad-cli pcb drc  --severity-error --severity-warning --schematic-parity
-  → 0 Violations                    (Stand 2026-09-11, mit U4-Footprint;
-                                     4 Kabelmontage-Keepouts sind Ausnahmen)
-  → schematic_parity: 9 Hinweise    (TP4-Value 3V3, und 8 × „extra footprint"
-                                     für die Bohrungen MH1–MH4 / H1–H4 ohne
-                                     Symbol – beides so gewollt)
+kicad-cli sch erc  --severity-all            → 0 violations
+kicad-cli pcb drc  --schematic-parity
+  → 0 violations                    (as of 2026-09-26, rev. 0.3;
+                                     4 cable-mounting keep-outs H1–H4 are exclusions)
+  → schematic_parity: 8 notes       (8 × "extra footprint" for the holes
+                                     MH1–MH4 / H1–H4 without symbol – intended)
   → 0 unconnected items
-  → 174 Leiterbahnsegmente, 6 Vias; B.Cu-GND-Fläche gefüllt
-  → Layeraufteilung: 133 F.Cu- und 41 B.Cu-Segmente
-  → engster Kupferabstand 0,200 mm, kleinste Bohrung 0,30 mm
+  → 185 track segments, 10 vias; B.Cu GND plane filled
+  → minimum copper clearance 0.200 mm, minimum hole 0.30 mm
 ```
 
-### Positionen
+Exact positions are in `hood-control.kicad_pcb`, a view in
+[`board-layout.pdf`](board-layout.pdf).
 
-```
-C1 (26.5,34.5)  90   C3 (16.0,23.5)  90   C4 (40.5, 7.0)  90
-C5 (61.0,30.0)   0   C6 (39.5,36.0)  90   C7 (43.5, 3.0)   0
-C8 (16.0,42.0) 180   D1 (61.0, 2.5)   0   D2 (58.5, 6.5) 270
-J1 (62.0, 6.0)   0   J2 (38.5,10.5)   0   J3 (68.0, 6.0)   0
-J4 (12.0, 5.5) 180   J5 ( 4.5,32.5)  90   J6 (33.0,35.0)  90
-R2 ( 4.5,46.0)  90   R3 (20.5,28.5) 180   R4 (16.0,13.5)  90
-R5 (69.0,27.5) 270   R6 (13.0, 9.5) 180   SW1 (6.0,13.0)   0
-SW2( 7.0,22.0) 270   U1 (27.0,13.0)   0   U2 (44.0, 7.0)   0
-U3 (50.0,30.0)   0   U4 (33.0,42.0)   0
-MH1(3.5,2.5) MH2(53.5,2.5) MH3(3.5,52.5) MH4(53.5,52.5)
-```
+## Status / next steps in KiCad
 
-## Stand / nächste Schritte in KiCad
-
-* Schematic ist vollständig verdrahtet, **ERC: 0 Fehler, 0 Warnungen**
-  (auch mit `--severity-all`).
-* **Jedes Bauteil hat einen Footprint.** Am 2026-09-06 korrigiert:
-  R5 (hatte `Package_DIP:DIP-8_W7.62mm` – ein DIP-8-Gehäuse für einen
-  zweipoligen Widerstand), J4/J5/J6 (hatten gar keinen), U4 (hatte den
-  Murata-Landeplatz), sowie die Umverteilung C1/C8.
-* Die ERC-Regel `footprint_filter` steht in den Projekteinstellungen auf
-  `ignore`. Sie hätte den R5-Fehler gemeldet – Kandidat zum Wiedereinschalten.
-* **Warnung zu den KiCad-MCP-Tools:** `move_schematic_component`,
-  `delete_schematic_wire`, `add_schematic_component` und `add_schematic_wire`
-  löschen beim Neuschreiben der Datei Junctions – auch an Stellen, die mit der
-  Operation nichts zu tun haben. Zweimal reproduziert (30 → 23 bzw. 30 → 18
-  Junctions), Folge waren jeweils ~14 ERC-Fehler durch stillschweigend
-  getrennte Netze. Änderungen deshalb entweder in der GUI machen oder per
-  Skript direkt an der Datei, und danach **immer** Junctions zählen und die
-  Netzliste gegen den Vorstand diffen.
-* **Board am 2026-09-07 neu aufgebaut** (siehe „Platzierung"): Outline
-  80 × 55 mm, alle 26 Bauteile platziert, MH1–MH4 als
-  `MountingHole_2.2mm_M2`. Aktives DRC 0 Violations; die 9
-  `schematic_parity`-Hinweise sind die dokumentierten, beabsichtigten
-  TP4-/Bohrloch-Abweichungen.
-* Die tote Clearance-Ausnahme für U5 wurde aus `hood-control.kicad_dru`
-  entfernt – U5 gibt es in der Schaltung nicht mehr.
-* **U4-Modul ist da, vermessen und gezeichnet** (2026-09-11): Footprint in
-  `hood-control.pretty`, im Board platziert, DRC 0 Violations.
-* **Fertigungsdaten liegen in `kicad/fab/`** (2026-09-11): sieben Gerber-Lagen
-  (F.Cu, B.Cu, F/B.Mask, F/B.Silkscreen, Edge.Cuts), PTH- und NPTH-Bohrdatei,
-  Gerber-Job-Datei und `hood-control-gerber.zip` als Upload-Paket. Erzeugung
-  und Bestellparameter für PCBWay stehen in `kicad/fab/FAB.md`. Wichtig: die
-  Fertigungsklasse **6/6 mil** ist Pflicht – der engste Kupferabstand ist mit
-  0,200 mm minimal unter den 0,2032 mm, die 8/8 mil verlangen würde.
-
-* **Spätere Platzierungsoptimierung:** Die Umgebung von U4 könnte noch
-  verbessert werden – vor allem C1 und C6 könnten näher an die VOUT-Seite.
-  Die Leiterplatte ist bereits geroutet; eine solche Revision würde danach
-  einen erneuten Routing-/Layerbereinigungsdurchlauf erfordern.
-* **Rev. 0.3 (2026-09-26):** D3/D4/R7/R8 stehend (RM 2,54) in der Reihe über
-  U3, außerhalb der Sperrfläche `Kabelmontage_1`. U4 ist jetzt mit seinem
-  Symbol verknüpft; dadurch steht `duplicate_pad_numbers_are_jumpers` auf
-  `no` – unkritisch, alle 8 U4-Bohrungen sind auf der Platine verbunden.
-* DRC-Ausnahmen für H1–H4 (Kabelbinder-Bohrungen in den Sperrflächen): die
-  Ausnahme für H4 muss nach dem Verschieben der Sperrfläche im DRC-Dialog
-  neu gesetzt werden.
+* The schematic is fully wired, **ERC: 0 errors, 0 warnings** (also with
+  `--severity-all`).
+* **Every part has a footprint.** Corrected on 2026-09-06: R5 (had
+  `Package_DIP:DIP-8_W7.62mm` – a DIP-8 package for a two-pin resistor),
+  J4/J5/J6 (had none), U4 (had the Murata land pattern), and the C1/C8
+  redistribution.
+* The ERC rule `footprint_filter` is set to `ignore` in the project
+  settings. It would have reported the R5 error – candidate for re-enabling.
+* **Warning about the KiCad MCP tools:** `move_schematic_component`,
+  `delete_schematic_wire`, `add_schematic_component` and
+  `add_schematic_wire` delete junctions when rewriting the file – even at
+  places unrelated to the operation. Reproduced twice (30 → 23 and 30 → 18
+  junctions), each time resulting in ~14 ERC errors from silently split
+  nets. Make changes either in the GUI or by script directly on the file,
+  and afterwards **always** count junctions and diff the netlist against the
+  previous state.
+* **Board rebuilt on 2026-09-07** (see "Placement"): outline 80 × 55 mm, all
+  parts placed, MH1–MH4 as `MountingHole_2.2mm_M2`.
+* The dead clearance exception for U5 was removed from
+  `hood-control.kicad_dru` – U5 no longer exists in the circuit.
+* **U4 module is here, measured and drawn** (2026-09-11): footprint in
+  `hood-control.pretty`, placed on the board.
+* **Fabrication files are in `kicad/fab/`**: seven Gerber layers (F.Cu, B.Cu,
+  F/B.Mask, F/B.Silkscreen, Edge.Cuts), PTH and NPTH drill files, Gerber job
+  file and `hood-control-gerber.zip` as upload package. Generation and order
+  parameters are in [`kicad/fab/FAB.md`](fab/FAB.md). Important: fabrication
+  class **6/6 mil** is mandatory – the minimum copper clearance of 0.200 mm
+  is just below the 0.2032 mm that 8/8 mil would require.
+* **Later placement optimisation:** the surroundings of U4 could still be
+  improved – especially C1 and C6 could move closer to the VOUT side. The
+  board is already routed; such a revision would require another routing /
+  layer clean-up pass.
+* **Rev. 0.3 (2026-09-26):** D3/D4/R7/R8 upright (2.54 mm pitch) in the row
+  above U3, outside the keep-out `Kabelmontage_1`. U4 is now linked to its
+  symbol; as a result `duplicate_pad_numbers_are_jumpers` is `no` –
+  uncritical, all 8 U4 holes are connected on the board.
+* DRC exclusions for H1–H4 (cable-tie holes inside the keep-outs) are stored
+  in `hood-control.kicad_pro`.

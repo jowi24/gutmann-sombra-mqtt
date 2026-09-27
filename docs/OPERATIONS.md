@@ -1,109 +1,106 @@
-# Betrieb, Diagnose und Flashen
+🇬🇧 **English** · 🇩🇪 [Deutsch](OPERATIONS.de.md)
 
-Dieses Dokument fasst die am 16. August 2026 ermittelten Hardwaredaten, das
-beobachtete Fehlerbild und die Bedienung der Firmware ab Version 0.0.7
-zusammen.
+# Operation, diagnostics and flashing
+
+This document summarises the hardware data determined on 16 August 2026,
+the observed failure pattern, and how to operate firmware version 0.0.7 and
+later.
 
 ## Hardware
 
-| Eigenschaft | Wert |
+| Property | Value |
 | --- | --- |
-| Plattform | ESP8266 |
-| Erkannter Chip | ESP8266EX |
-| Fähigkeiten | WLAN, bis 160 MHz |
-| Quarz | 26 MHz |
-| MAC-Adresse | `68:c6:3a:88:b4:ba` |
-| PlatformIO-Board | `nodemcuv2` |
-| Schaltungsentwurf | ESP8266-12E-Modul |
-| Serieller Adapter | `/dev/cu.usbserial-AD025JRF` bzw. `/dev/tty.usbserial-AD025JRF` |
-| Firmware-Baudrate | 115200 Baud |
-| ROM-Bootausgabe | 74880 Baud |
+| Platform | ESP8266 |
+| Detected chip | ESP8266EX |
+| Features | Wi-Fi, up to 160 MHz |
+| Crystal | 26 MHz |
+| MAC address | `68:c6:3a:88:b4:ba` |
+| PlatformIO board | `nodemcuv2` |
+| Circuit design | ESP8266-12E module |
+| Serial adapter | `/dev/cu.usbserial-AD025JRF` or `/dev/tty.usbserial-AD025JRF` |
+| Firmware baud rate | 115200 baud |
+| ROM boot output | 74880 baud |
 
-Die MAC-Adresse identifiziert dieses konkrete Gerät eindeutig. Die während der
-Diagnose verwendete Adresse `192.168.178.48` wurde dynamisch per DHCP vergeben
-und kann sich ändern.
+The MAC address uniquely identifies this particular device. The address
+`192.168.178.48` used during diagnosis was assigned dynamically via DHCP and
+may change.
 
-## Ursprüngliches Fehlerbild
+## Original failure pattern
 
-- Das Gerät wird regelmäßig ein- bis zweimal täglich von der
-  Stromversorgung getrennt.
-- Dieses Verhalten funktionierte mehrere Wochen.
-- Anschließend blieb das Gerät etwa fünf Tage dauerhaft in MQTT offline.
-- Im Pi-hole erschien nach einem Neustart keine DNS-Anfrage für
-  `mqtt.local`.
-- Die bekannten DHCP-Einträge gehörten nicht zum Gerät; dessen MAC-Adresse war
-  dort nicht vorhanden.
-- Nach dem Ausbau und einem Start an einem Standort mit stärkerem WLAN
-  verband sich das Gerät wieder.
+- The device is regularly disconnected from power once or twice a day.
+- This worked for several weeks.
+- Afterwards the device stayed offline in MQTT for about five days.
+- After a restart, Pi-hole showed no DNS query for `mqtt.local`.
+- The known DHCP leases did not belong to the device; its MAC address was
+  not present.
+- After removing it and starting it at a location with stronger Wi-Fi, the
+  device connected again.
 
-Der Test außerhalb des Einbauorts beweist die grundsätzliche Funktion von
-ESP8266, Flash, Firmwarekonfiguration, WLAN und MQTT. Er bewertet nicht die
-Funkqualität am Einbauort.
+The test outside the installation location proves that the ESP8266, flash,
+firmware configuration, Wi-Fi and MQTT work in principle. It says nothing
+about the radio quality at the installation location.
 
-## Wahrscheinliche Ursache
+## Probable cause
 
-Die alte Firmware verwendete einen blockierenden Aufruf von
-`WiFiManager::autoConnect()`. Schlug die erste WLAN-Verbindung beim Einschalten
-wegen des schwachen Signals fehl, wechselte das Gerät in ein dauerhaft
-blockierendes Konfigurationsportal. Die spätere Reconnect-Logik in `loop()`
-wurde dann nicht erreicht.
+The old firmware used a blocking call to `WiFiManager::autoConnect()`. If
+the first Wi-Fi connection at power-up failed because of the weak signal,
+the device fell into a permanently blocking configuration portal. The later
+reconnect logic in `loop()` was never reached.
 
-Das fehlende Setup-WLAN am Einbauort schließt diesen Zustand nicht aus: Das
-Signal des ESP8266 kann durch denselben Einbauort ebenfalls stark gedämpft
-werden.
+Not seeing the setup hotspot at the installation location does not rule out
+this state: the ESP8266's own signal can be heavily attenuated by the same
+location.
 
-Zusätzlich bleibt die eingebaute Stromversorgung eine mögliche Fehlerquelle.
-Ein erfolgreicher Betrieb über USB kann eine schwache oder instabile
-3,3-V-Versorgung verdecken.
+The built-in power supply also remains a possible cause. Successful
+operation over USB can hide a weak or unstable 3.3 V supply.
 
-## Verhalten ab Firmware 0.0.7
+## Behaviour from firmware 0.0.7
 
-1. Die Firmware startet die Haubensteuerung ohne auf das WLAN zu warten.
-2. Sie versucht alle zehn Sekunden, das gespeicherte WLAN zu erreichen.
-3. Nach 20 Sekunden ohne Verbindung startet zusätzlich der geschützte Hotspot
-   `HoodControl-Setup`.
-4. Das Portal ist unter `http://192.168.4.1` erreichbar.
-5. Während der Hotspot aktiv ist, versucht das Gerät alle 30 Sekunden erneut,
-   das gespeicherte WLAN zu erreichen.
-6. Nach einer Minute stabiler WLAN-Verbindung wird der Hotspot beendet.
-7. MQTT-Verbindungsversuche verwenden exponentielles Backoff von fünf Sekunden
-   bis maximal fünf Minuten.
-8. Nach einem MQTT-Reconnect werden Discovery und alle Haubenzustände erneut
-   publiziert.
+1. The firmware starts the hood control without waiting for Wi-Fi.
+2. It tries to reach the stored network every ten seconds.
+3. After 20 seconds without a connection it additionally starts the
+   password-protected hotspot `HoodControl-Setup`.
+4. The portal is available at `http://192.168.4.1`.
+5. While the hotspot is active, the device retries the stored network every
+   30 seconds.
+6. After one minute of stable Wi-Fi the hotspot is shut down.
+7. MQTT connection attempts use exponential backoff from five seconds up to
+   five minutes.
+8. After an MQTT reconnect, discovery and all hood states are republished.
 
-## Konfigurations-Hotspot
+## Configuration hotspot
 
-| Eigenschaft | Wert |
+| Property | Value |
 | --- | --- |
 | SSID | `HoodControl-Setup` |
-| Passwort | `REMOVED` |
+| Password | `REMOVED` |
 | Portal | `http://192.168.4.1` |
 
-Das Passwort muss mindestens acht Zeichen lang sein, da der ESP8266-Hotspot
-sonst nicht als geschütztes WLAN gestartet werden kann.
+The password must be at least eight characters long, otherwise the ESP8266
+cannot start the hotspot as a protected network.
 
-Nach dem Speichern neuer WLAN- oder MQTT-Einstellungen startet das Gerät
-kontrolliert neu.
+After saving new Wi-Fi or MQTT settings the device restarts in a controlled
+way.
 
 ## MQTT
 
-Der Standardpräfix lautet `home/kitchen/hood`.
+The default prefix is `home/kitchen/hood`.
 
-### Verfügbarkeit
+### Availability
 
-| Topic | Bedeutung |
+| Topic | Meaning |
 | --- | --- |
-| `$online` | Retained-Verfügbarkeit, `true` oder Last-Will `false` |
-| `$firmware` | Firmwareversion |
-| `$ip` | Aktuelle DHCP-Adresse |
-| `$wifi_rssi` | WLAN-Signalstärke in dBm |
-| `$uptime` | Laufzeit in Sekunden |
-| `$reset_reason` | Resetursache des ESP8266 |
-| `$last_error` | Zuletzt erkannter Fehler |
+| `$online` | retained availability, `true` or last will `false` |
+| `$firmware` | firmware version |
+| `$ip` | current DHCP address |
+| `$wifi_rssi` | Wi-Fi signal strength in dBm |
+| `$uptime` | uptime in seconds |
+| `$reset_reason` | ESP8266 reset reason |
+| `$last_error` | last detected error |
 
-### Erweiterte Diagnose
+### Extended diagnostics
 
-Das retained Topic `diagnostics` enthält unter anderem:
+The retained topic `diagnostics` contains, among other things:
 
 ```json
 {
@@ -124,48 +121,47 @@ Das retained Topic `diagnostics` enthält unter anderem:
 }
 ```
 
-Das nicht-retained Topic `events` liefert bis zu 16 gepufferte Ereignisse nach,
-sobald MQTT wieder erreichbar ist. Beispiele sind WLAN-Abbrüche,
-Reconnect-Versuche, Portalstart und MQTT-Fehler.
+The non-retained topic `events` delivers up to 16 buffered events as soon as
+MQTT is reachable again, for example Wi-Fi drop-outs, reconnect attempts,
+portal start and MQTT errors.
 
-### RSSI einordnen
+### Interpreting RSSI
 
-| RSSI | Einschätzung |
+| RSSI | Assessment |
 | --- | --- |
-| besser als -60 dBm | gut |
-| -60 bis -70 dBm | brauchbar |
-| -70 bis -80 dBm | schwach |
-| schlechter als -80 dBm | sehr instabil |
+| better than -60 dBm | good |
+| -60 to -70 dBm | usable |
+| -70 to -80 dBm | weak |
+| worse than -80 dBm | very unstable |
 
-Entscheidend ist der Messwert am tatsächlichen Einbauort bei geschlossener
-Haube.
+What matters is the value at the actual installation location with the hood
+closed.
 
-## USB-Flashvorgang
+## USB flashing
 
-### Normaler PlatformIO-Upload
+### Normal PlatformIO upload
 
 ```sh
 pio run -e nodemcuv2 -t upload
 ```
 
-Der automatische Wechsel in den Bootloader funktionierte mit dem vorhandenen
-seriellen Adapter nicht zuverlässig und endete mit:
+The automatic switch into the bootloader did not work reliably with the
+serial adapter at hand and ended with:
 
 ```text
 Failed to connect to ESP8266: Timed out waiting for packet header
 ```
 
-### Erfolgreiches manuelles Verfahren
+### Manual procedure that worked
 
-1. Die einzelne Taste am Modul gedrückt halten.
-2. Den seriellen Adapter verbinden beziehungsweise einen Upload mit
-   automatischem Reset starten.
-3. Die Taste während des Verbindungsaufbaus gedrückt halten.
-4. Nach Beginn des Schreibvorgangs kann die Taste losgelassen werden.
-5. Nach dem Flashen den Adapter ohne gedrückte Taste neu verbinden, damit die
-   Firmware normal startet.
+1. Hold down the single button on the module.
+2. Connect the serial adapter or start an upload with automatic reset.
+3. Keep the button pressed while the connection is established.
+4. Once writing has started, the button can be released.
+5. After flashing, reconnect the adapter without the button pressed so that
+   the firmware starts normally.
 
-Verwendeter direkter Upload:
+Direct upload used:
 
 ```sh
 esptool --chip esp8266 \
@@ -176,40 +172,41 @@ esptool --chip esp8266 \
   write-flash 0x0 .pio/build/nodemcuv2/firmware.bin
 ```
 
-Der erfolgreiche Vorgang erkannte den ESP8266EX mit der MAC-Adresse
-`68:c6:3a:88:b4:ba`, schrieb 437.760 Bytes und bestätigte anschließend den
-Flash-Hash.
+The successful run detected the ESP8266EX with MAC address
+`68:c6:3a:88:b4:ba`, wrote 437,760 bytes and then verified the flash hash.
 
-Das Drücken der Taste beim Einschalten zieht sehr wahrscheinlich GPIO0 auf LOW
-und aktiviert damit den ROM-Bootloader. Ohne gedrückte Taste startet die
-Anwendungsfirmware.
+Pressing the button at power-up most likely pulls GPIO0 LOW and thereby
+activates the ROM bootloader. Without the button pressed, the application
+firmware starts.
 
-## Diagnoseablauf bei erneutem Ausfall
+(On the PCB rev. 0.2/0.3 the jumper J5 selects RUN or FLASH instead – see
+[CIRCUIT.md](CIRCUIT.md), section 10.)
 
-1. Prüfen, ob `home/kitchen/hood/$online` auf `false` gewechselt ist.
-2. Nach `HoodControl-Setup` suchen und gegebenenfalls `192.168.4.1` öffnen.
-3. In Pi-hole oder dem DHCP-Server nach der MAC-Adresse
-   `68:c6:3a:88:b4:ba` suchen.
-4. MQTT-Topics `$wifi_rssi`, `$last_error`, `$reset_reason`, `diagnostics` und
-   `events` prüfen.
-5. Bei vorhandenem USB-Zugang den seriellen Monitor mit 115200 Baud öffnen.
-6. Wenn der USB-Seriell-Port sichtbar ist, aber auch der ESP-ROM-Bootloader
-   keinerlei Daten sendet, Versorgung, Reset- und Boot-Pins prüfen.
+## Diagnostic procedure after another failure
 
-## Elektrische Prüfung
+1. Check whether `home/kitchen/hood/$online` has changed to `false`.
+2. Look for `HoodControl-Setup` and open `192.168.4.1` if needed.
+3. Search Pi-hole or the DHCP server for MAC address `68:c6:3a:88:b4:ba`.
+4. Check the MQTT topics `$wifi_rssi`, `$last_error`, `$reset_reason`,
+   `diagnostics` and `events`.
+5. With USB access, open the serial monitor at 115200 baud.
+6. If the USB-serial port is visible but not even the ESP ROM bootloader
+   sends any data, check the supply, reset and boot pins.
 
-Falls das Gerät nur über USB, aber nicht in der Haube zuverlässig arbeitet,
-gegen GND messen:
+## Electrical check
 
-| Pin | Erwarteter Pegel |
+If the device only works reliably on USB but not in the hood, measure
+against GND:
+
+| Pin | Expected level |
 | --- | --- |
-| VCC | etwa 3,3 V |
-| EN/CH_PD | HIGH, etwa 3,3 V |
-| RST | HIGH, etwa 3,3 V |
-| GPIO0 | HIGH beim normalen Start |
-| GPIO2 | HIGH beim normalen Start |
-| GPIO15 | LOW beim normalen Start |
+| VCC | about 3.3 V |
+| EN/CH_PD | HIGH, about 3.3 V |
+| RST | HIGH, about 3.3 V |
+| GPIO0 | HIGH on normal start |
+| GPIO2 | HIGH on normal start |
+| GPIO15 | LOW on normal start |
 
-Spannungseinbrüche während WLAN-Sendeimpulsen sind ebenfalls relevant. Die
-Firmware verwendet maximale WLAN-Sendeleistung und deaktiviert den
-WLAN-Schlafmodus; dadurch ist eine stabile Stromversorgung besonders wichtig.
+Voltage dips during Wi-Fi transmit bursts are also relevant. The firmware
+uses maximum Wi-Fi transmit power and disables Wi-Fi sleep mode, which makes
+a stable power supply especially important.

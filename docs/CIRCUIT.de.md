@@ -1,9 +1,11 @@
+🇬🇧 [English](CIRCUIT.md) · 🇩🇪 **Deutsch**
+
 # Wie die Schaltung funktioniert
 
 Diese Beschreibung erklärt die Platine der Haubensteuerung (Rev. 0.3) so, dass
 man sie auch ohne Elektronik-Ausbildung und nach Jahren noch nachvollziehen
 kann. Sie erklärt das *Warum*. Die genauen Bauteilwerte, Bestellnummern und
-Layout-Details stehen in [`kicad/DESIGN.md`](../kicad/DESIGN.md), der
+Layout-Details stehen in [`kicad/DESIGN.de.md`](../kicad/DESIGN.de.md), der
 Schaltplan liegt als [`kicad/schematic.pdf`](../kicad/schematic.pdf) bei.
 
 Inhalt:
@@ -477,7 +479,7 @@ DTR – RXI – TXO – 3V3 – NC – GND.
 - GPIO0 wird **nicht** automatisch umgeschaltet: Zum seriellen Flashen J5
   auf FLASH stecken, danach zurück auf RUN und Reset drücken.
 - Im Alltag wird ohnehin **per WLAN (OTA)** geflasht, siehe
-  [`OPERATIONS.md`](OPERATIONS.md).
+  [`OPERATIONS.de.md`](OPERATIONS.de.md).
 
 **Wichtig:** Über den 3V3-Pin von J2 versorgt der Adapter den ESP direkt mit
 3,3 V. Ein Test nur am Adapter sagt deshalb **nichts** über die eigentliche
