@@ -373,10 +373,12 @@ void publishDiscovery() {
 		doc["command_topic"]           = prefix + "/ventilation/set";
 		doc["payload_on"]              = "1";
 		doc["payload_off"]             = "0";
-		doc["state_value_template"]    = "{% if value == '0' %}off{% else %}on{% endif %}";
+		// Template muss payload_on/payload_off liefern, nicht "on"/"off"
+		doc["state_value_template"]    = "{% if value == '0' %}0{% else %}1{% endif %}";
 		doc["preset_mode_state_topic"] = prefix + "/ventilation/state";
 		doc["preset_mode_command_topic"] = prefix + "/ventilation/set";
-		doc["preset_mode_value_template"] = "{{ value }}";
+		// "0" ist kein Preset; "None" (payload_reset_preset_mode) setzt es zurück
+		doc["preset_mode_value_template"] = "{% if value == '0' %}None{% else %}{{ value }}{% endif %}";
 		doc["preset_modes"][0]         = "1";
 		doc["preset_modes"][1]         = "2";
 		doc["preset_modes"][2]         = "3";

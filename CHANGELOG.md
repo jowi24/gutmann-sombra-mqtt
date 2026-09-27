@@ -18,6 +18,15 @@ Anpassung an die gefertigte Platine (Rev. 0.3), siehe `docs/SCHALTUNG.md`.
   Kanalpaare kommen auf der Platine gegenüber der Lochraster-Version
   vertauscht an.
 
+### Behoben
+
+- Home-Assistant-Discovery der Lüftung: `state_value_template` lieferte
+  `on`/`off`, Home Assistant vergleicht das Ergebnis aber mit
+  `payload_on`/`payload_off` (`1`/`0`). Die Lüftung stand deshalb dauerhaft
+  auf `unknown`. Das Template liefert jetzt `1`/`0`.
+- Lüftungsstufe `0` wird als Preset `None` gemeldet und setzt das Preset
+  zurück, statt als ungültiges Preset verworfen zu werden.
+
 ## 0.0.8 - 2026-09-08
 
 ### Hinzugefügt
