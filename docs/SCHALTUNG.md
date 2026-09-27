@@ -37,12 +37,12 @@ ist nur ein zusätzlicher „Zuhörer mit Fingern“.
 ```mermaid
 flowchart LR
     Haube["Haubenelektronik<br/>(Motor, Licht)"]
-    Platine["Platine<br/>J1 ⇄ J3"]
+    Platine["Platine<br/>J1 #8644; J3"]
     Panel["Bedienfeld<br/>7 Tasten, 7 LEDs"]
     HA["Home Assistant"]
     Haube <-- "8-adriges Kabel" --> Platine
     Platine <-- "8-adriges Kabel" --> Panel
-    Haube -- "Service-Anschluss ~4,8 V → J6" --> Platine
+    Haube -- "Service-Anschluss ~4,8 V #8594; J6" --> Platine
     Platine -. "WLAN / MQTT" .-> HA
 ```
 
@@ -114,7 +114,7 @@ gantt
     section Zeile D
     HIGH :d1, 3, 1ms
     section Tastenspalte
-    HIGH (Taste in Zeile B gedrückt) :crit, t1, 1, 1ms
+    HIGH (Taste in Zeile B gedr#252;ckt) :crit, t1, 1, 1ms
 ```
 
 **Die entscheidende Erkenntnis:** Eine Taste zu drücken heißt elektrisch nur,
@@ -147,13 +147,13 @@ den Beginn einer Runde, ergeben sich die anderen drei Zeilen aus der Uhrzeit
 ```mermaid
 flowchart LR
     J6["J6<br/>~4,8 V von der Haube"] --> V5(["Netz 5V_IN"])
-    V5 --- C8["C8 1000 µF<br/>Puffer"]
+    V5 --- C8["C8 1000 #181;F<br/>Puffer"]
     V5 --> U4["U4 Buck-Boost<br/>TPS63802"]
-    V5 --> U3["U3 74HCT08<br/>läuft auf 5 V"]
+    V5 --> U3["U3 74HCT08<br/>l#228;uft auf 5 V"]
     U4 --> V33(["Netz VCC = 3,3 V"])
-    V33 --- C1["C1 470 µF"]
+    V33 --- C1["C1 470 #181;F"]
     V33 --> U1["U1 ESP8266"]
-    V33 --> U2["U2 CD4050<br/>läuft auf 3,3 V"]
+    V33 --> U2["U2 CD4050<br/>l#228;uft auf 3,3 V"]
 ```
 
 ```mermaid
@@ -163,12 +163,12 @@ flowchart LR
         SCAN["Pin 8<br/>SCAN"]
         BTN["Pin 3, 4<br/>Tastenspalten"]
     end
-    LED -- "5 V" --> U2A["U2 CD4050<br/>5 V → 3,3 V"]
+    LED -- "5 V" --> U2A["U2 CD4050<br/>5 V #8594; 3,3 V"]
     SCAN -- "5 V" --> U2A
-    U2A -- "GPIO5, GPIO4<br/>mithören" --> ESP["U1 ESP8266"]
+    U2A -- "GPIO5, GPIO4<br/>mith#246;ren" --> ESP["U1 ESP8266"]
     U2A -- "GPIO13<br/>Takt" --> ESP
-    ESP -- "GPIO12, GPIO14<br/>drücken" --> U3B["U3 74HCT08<br/>3,3 V → 5 V"]
-    U3B --> D["D3 / D4<br/>Rückschlagventil"]
+    ESP -- "GPIO12, GPIO14<br/>dr#252;cken" --> U3B["U3 74HCT08<br/>3,3 V #8594; 5 V"]
+    U3B --> D["D3 / D4<br/>R#252;ckschlagventil"]
     D --> BTN
 ```
 
@@ -336,7 +336,7 @@ Die Diode wirkt wie ein Rückschlagventil:
 
 ```mermaid
 flowchart LR
-    U3["U3-Ausgang"] -- "Anode" --> D{{"Diode D3 / D4<br/>▶|"}}
+    U3["U3-Ausgang"] -- "Anode" --> D{{"Diode D3 / D4<br/>#9654;|"}}
     D -- "Kathode (Ring)" --> S["Tastenspalte<br/>J1/J3 Pin 3 bzw. 4"]
 ```
 
