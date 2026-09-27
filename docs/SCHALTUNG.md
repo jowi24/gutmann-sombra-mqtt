@@ -34,13 +34,16 @@ gedrückt** – gesteuert per WLAN/MQTT aus Home Assistant.
 Das Original-Bedienfeld funktioniert dabei ganz normal weiter. Die Platine
 ist nur ein zusätzlicher „Zuhörer mit Fingern“.
 
-```
-   ┌─────────────────┐   8-adriges Kabel   ┌──────────┐   8-adriges Kabel   ┌─────────────┐
-   │ Haubenelektronik│ ──────────────────► │ Platine  │ ──────────────────► │ Bedienfeld  │
-   │  (Motor, Licht) │ ◄────────────────── │ (J1│J3)  │ ◄────────────────── │ 7 Tasten,   │
-   └────────┬────────┘                     └────┬─────┘                     │ 7 LEDs      │
-            │ Service-Anschluss ~4,8 V          │ WLAN                      └─────────────┘
-            └───────────── J6 ─────────────────►│ ────► MQTT ────► Home Assistant
+```mermaid
+flowchart LR
+    Haube["Haubenelektronik<br/>(Motor, Licht)"]
+    Platine["Platine<br/>J1 ⇄ J3"]
+    Panel["Bedienfeld<br/>7 Tasten, 7 LEDs"]
+    HA["Home Assistant"]
+    Haube <-- "8-adriges Kabel" --> Platine
+    Platine <-- "8-adriges Kabel" --> Panel
+    Haube -- "Service-Anschluss ~4,8 V → J6" --> Platine
+    Platine -. "WLAN / MQTT" .-> HA
 ```
 
 ---
@@ -97,14 +100,21 @@ angeordnet:
   Firmware aus, und so stimmen die gemeldeten Zustände mit dem Bedienfeld
   überein).
 
-```
-Zeit →        0 ms      1 ms      2 ms      3 ms      4 ms      5 ms
-Zeile A    ▁▁█████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████████▁▁▁▁
-Zeile B    ▁▁▁▁▁▁▁▁▁▁▁█████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-Zeile C    ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-Zeile D    ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-Taste in Zeile B gedrückt:
-Tastenspalte▁▁▁▁▁▁▁▁▁▁▁█████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+```mermaid
+gantt
+    title Eine Runde = 4 ms (danach beginnt Zeile A von vorn)
+    dateFormat x
+    axisFormat %L ms
+    section Zeile A
+    HIGH :a1, 0, 1ms
+    section Zeile B
+    HIGH :b1, 1, 1ms
+    section Zeile C
+    HIGH :c1, 2, 1ms
+    section Zeile D
+    HIGH :d1, 3, 1ms
+    section Tastenspalte
+    HIGH (Taste in Zeile B gedrückt) :crit, t1, 1, 1ms
 ```
 
 **Die entscheidende Erkenntnis:** Eine Taste zu drücken heißt elektrisch nur,
@@ -134,16 +144,32 @@ den Beginn einer Runde, ergeben sich die anderen drei Zeilen aus der Uhrzeit
 
 ## 4. Überblick über die Platine
 
+```mermaid
+flowchart LR
+    J6["J6<br/>~4,8 V von der Haube"] --> V5(["Netz 5V_IN"])
+    V5 --- C8["C8 1000 µF<br/>Puffer"]
+    V5 --> U4["U4 Buck-Boost<br/>TPS63802"]
+    V5 --> U3["U3 74HCT08<br/>läuft auf 5 V"]
+    U4 --> V33(["Netz VCC = 3,3 V"])
+    V33 --- C1["C1 470 µF"]
+    V33 --> U1["U1 ESP8266"]
+    V33 --> U2["U2 CD4050<br/>läuft auf 3,3 V"]
 ```
- J6 (5 V von der Haube)
-   │
-   ├─ C8 1000 µF (Puffer) ── U4 Buck-Boost ──► 3,3 V ─┬─ C1 470 µF
-   │                                                  ├─ U1 ESP8266
-   └─ U3 74HCT08 (läuft auf 5 V)                      └─ U2 CD4050 (läuft auf 3,3 V)
 
- J1/J3 Pin 1, 2 (LED)  ──► U2 (5 V → 3,3 V) ──► ESP GPIO5, GPIO4    „mithören“
- J1/J3 Pin 8  (SCAN)   ──► U2 (5 V → 3,3 V) ──► ESP GPIO13          „Takt“
- ESP GPIO12, GPIO14    ──► U3 (3,3 V → 5 V) ──► D3/D4 ──► J1/J3 Pin 3, 4   „drücken“
+```mermaid
+flowchart LR
+    subgraph Kabel["Kabel J1/J3"]
+        LED["Pin 1, 2<br/>LED-Spalten"]
+        SCAN["Pin 8<br/>SCAN"]
+        BTN["Pin 3, 4<br/>Tastenspalten"]
+    end
+    LED -- "5 V" --> U2A["U2 CD4050<br/>5 V → 3,3 V"]
+    SCAN -- "5 V" --> U2A
+    U2A -- "GPIO5, GPIO4<br/>mithören" --> ESP["U1 ESP8266"]
+    U2A -- "GPIO13<br/>Takt" --> ESP
+    ESP -- "GPIO12, GPIO14<br/>drücken" --> U3B["U3 74HCT08<br/>3,3 V → 5 V"]
+    U3B --> D["D3 / D4<br/>Rückschlagventil"]
+    D --> BTN
 ```
 
 | Bauteil | Aufgabe in einem Satz |
@@ -308,13 +334,16 @@ und bei zufälligen HIGH-Pegeln sähe die Haube Phantomtasten.
 
 Die Diode wirkt wie ein Rückschlagventil:
 
+```mermaid
+flowchart LR
+    U3["U3-Ausgang"] -- "Anode" --> D{{"Diode D3 / D4<br/>▶|"}}
+    D -- "Kathode (Ring)" --> S["Tastenspalte<br/>J1/J3 Pin 3 bzw. 4"]
 ```
-            U3-Ausgang  ──►|──  Tastenspalte (J1/J3 Pin 3 bzw. 4)
-                     Anode   Kathode (Ring)
 
- U3 = HIGH (5 V):  Diode leitet  → Spalte ≈ 4,3 V → Haube sieht „Taste gedrückt“
- U3 = LOW  (0 V):  Diode sperrt  → Spalte ist frei → Bedienfeld funktioniert normal
-```
+| U3-Ausgang | Diode | Tastenspalte | Haube sieht |
+|---|---|---|---|
+| HIGH (5 V) | leitet | ≈ 4,3 V | „Taste gedrückt“ |
+| LOW (0 V) | sperrt | frei | nichts – das Bedienfeld funktioniert normal |
 
 Die 0,6 V, die die Diode „kostet“, stören nicht: 4,3 V sind für die
 5-V-Elektronik der Haube ein eindeutiges HIGH.
