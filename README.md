@@ -4,6 +4,8 @@ ESP8266-basiertes IoT-Modul zur Integration einer Dunstabzugshaube in die Hausau
 
 - [Änderungsverlauf](CHANGELOG.md)
 - [Betrieb, Diagnose und Flashen](docs/OPERATIONS.md)
+- [Wie die Schaltung funktioniert](docs/SCHALTUNG.md) – verständliche Erklärung der Hardware
+- [Hardware-Designnotizen](kicad/DESIGN.md) – Bauteilwerte, Beschaffung, Layout
 
 ## Netzwerk und Diagnose
 
