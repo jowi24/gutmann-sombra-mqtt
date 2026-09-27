@@ -3,6 +3,21 @@
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
+## 0.0.9 - 2026-09-26
+
+Anpassung an die gefertigte Platine (Rev. 0.3), siehe `docs/SCHALTUNG.md`.
+
+### Geändert
+
+- Die Tasten-Ausgänge GPIO12/14 werden jetzt immer aktiv getrieben:
+  HIGH = Taste drücken, LOW = loslassen. Früher wurden sie zum Loslassen
+  hochohmig geschaltet; das lässt die Eingänge des Pegelwandlers U3 floaten
+  und erzeugt Phantom-Tastendrücke.
+- GPIO12/14 werden gleich zu Beginn von `setup()` auf LOW gesetzt.
+- LED-Pins (`ledPin1/2`) und Tasten-Pins (`buttonPin1/2`) getauscht – beide
+  Kanalpaare kommen auf der Platine gegenüber der Lochraster-Version
+  vertauscht an.
+
 ## 0.0.8 - 2026-09-08
 
 ### Hinzugefügt

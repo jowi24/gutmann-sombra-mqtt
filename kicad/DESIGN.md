@@ -9,10 +9,11 @@ vom 2026-09-03) sowie aus dem Blogartikel von 2017
 **Bauweise: THT (bedrahtet).** Alle Widerstände/Kondensatoren bedrahtet,
 alle ICs in DIP-Sockeln, Stecker als Pfostenleisten 2,54 mm, Taster als
 6-mm-THT-Kurzhubtaster. Einziges SMD-Teil ist das ESP-12E-Modul selbst.
-Der Step-Down-Wandler ist **kein diskreter Schaltregler**, sondern ein
-3-poliger Steckplatz für ein fertiges Mini-Buck-Modul.
+Der Spannungswandler ist **kein diskreter Schaltregler**, sondern ein
+fertiges TPS63802-Buck-Boost-Modul (U4, 8 Bohrungen), flach aufgelötet oder auf
+Stiftleisten gesteckt.
 
-Blattformat der Schematic: **A5** (420 × 297 mm).
+Blattformat der Schematic: **A5** (210 × 148 mm).
 
 > **Namenskollision beachten:** Die Haubenelektronik benennt ihre eigenen
 > Matrixleitungen ebenfalls J1–J8 (J1–J4 = Scan-Eingänge, J5–J6 = Tasten-
@@ -28,14 +29,13 @@ Blattformat der Schematic: **A5** (420 × 297 mm).
 | U2 | CD4050BE / HEF4050BP / 74HC4050N | Hex-Buffer, **16-pol. DIP** | `Package_DIP:DIP-16_W7.62mm_Socket` | Pegelwandlung 5V→3,3V (Lesen: Scan-Bus, Haube-J7/J8) |
 | U3 | **74HCT08** (z.B. SN74HCT08N) | Quad-AND, 14-pol. DIP | `Package_DIP:DIP-14_W7.62mm_Socket` | Pegelwandlung 3,3V→5V (Treiben: Haube-J5/J6) |
 | U4 | **TPS63802-Buck-Boost-Modul** (eBay, PCB-Tronic24) | 1,5–5,5 V → 3,3 V, 2,7 A | `hood-control:TPS63802_Module_25.8x13.0mm` (projekteigene Bibliothek) | Stromversorgung (Ersatz für den 2017er Mini-Wandler) |
-| U5 (optional) | Supervisor/Reset-IC MCP130-315 | TO-92 | `Package_TO_SOT_THT:TO-92_Inline` | sauberer Power-on-Reset, verhindert Brownout-Boot-Loops |
 | R2 | 10 kΩ | 0207 bedrahtet | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal` | Pull-up GPIO0 → 3,3V, über Board-J5 Pin 1 |
 | R3 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-down GPIO15 → GND |
 | R4 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up CH_PD/EN → 3,3V |
 | R5 | 2,4 kΩ | 0207 bedrahtet | s.o. | Pull-down auf den Scan-Bus (empirisch, siehe Blogartikel 2017) |
 | R6 | 10 kΩ | 0207 bedrahtet | s.o. | Pull-up RST → 3,3V |
 | R7, R8 | 10 kΩ | 0207 bedrahtet, stehend | `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical` | Pull-down der U3-Eingänge (GPIO12/14), ab Rev. 0.3 |
-| C1 | 470 µF / 10 V | Elko radial, D8/RM3,5 | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | Stützelko auf `VCC` nah am ESP – überbrückt die Regelzeit des Buck-Moduls |
+| C1 | 470 µF / 10 V | Elko radial, D8/RM3,5 | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | Stützelko auf `VCC` nah am ESP – überbrückt die Regelzeit des Buck-Boost-Moduls |
 | C8 | 1000 µF / 10 V | Elko radial, D10/RM5, 12,5 mm hoch (Reichelt `RD1A108M1012M128`) | `Capacitor_THT:CP_Radial_D10.0mm_P5.00mm` | Bulk-Kapazität auf `5V_IN` – puffert die strombegrenzte Haubenversorgung |
 | C3–C6 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | Abblockung: C3=U1(VCC), C4=U2(VCC 3,3V), C5=U3(5V_IN), C6=U4-Ausgang |
 | C7 | 100 nF | Keramik-Scheibe, RM5 | `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm` | RST-Kopplung FTDI-DTR → RST (Auto-Reset) |
@@ -396,10 +396,10 @@ selbst (tritt auch ohne Platine auf).
 3. **Reset-Taster war ursprünglich an GPIO16 statt RST** verdrahtet –
    im Redesign SW1 direkt an RST/EXT_RST.
 4. **Kein definierter Power-on-Reset** – Wandler-Anlaufverhalten konnte zu
-   instabilem Boot führen. → optional U5 (Supervisor-IC) vorgesehen. Der
-   MCP130 hat einen Open-Drain-Ausgang und verträgt sich deshalb mit R6 und
-   C7; seine Schwelle von 3,15 V liegt allerdings dicht an 3,3 V.
-   Erst die Pufferung richtig auslegen, dann über U5 entscheiden.
+   instabilem Boot führen. → Behoben durch den Buck-Boost-Wandler U4 (regelt
+   ab 1,5 V) und die aufgeteilte Pufferung C8/C1. Ein zeitweise erwogener
+   Supervisor-IC (U5, MCP130) wurde deshalb nicht eingebaut; die
+   Inbetriebnahme 2026-09 lief ohne Brownout-Resets.
 5. **Bulk-Elko zu klein/unklar dimensioniert und auf der falschen Seite**
    (Originalwert im Artikel: 800 µF, gemessen später 3,88 mF) → im Redesign
    aufgeteilt: C8 (1000 µF) auf `5V_IN`, C1 (470 µF) auf `VCC`.
@@ -529,15 +529,20 @@ Der dritte Durchgang war nötig, weil C8 durch die Wahl des TPS63802 von
 
 ### Zonen
 
+Stand Rev. 0.3 (2026-09-26), Blick auf die Bestückungsseite:
+
 | Bereich | Inhalt |
 |---|---|
-| Oben Mitte, x 18…36 | **U1** (ESP-12E), Antenne an der Oberkante |
-| Links oben | SW1, J4, R6, R4, C3 — Reset-Gruppe |
-| Links unten | SW2, J5, R2, C8 |
-| Mitte, x 36…44 | J2 (FTDI), C7, C4, C6 |
-| Mitte rechts, x 44…60 | **U2** (4050) oben, **U3** (74HCT08) unten |
-| Rechts oben | **J1**, **J3**, D1, D2, C5, R5 |
-| Unten Mitte | **U4** (Wandlermodul), J6, C1 |
+| Links Mitte | **U1** (ESP-12E), Antenne an der linken Schmalseite mit Keep-out-Zone |
+| Links oben | J2 (FTDI), C7, SW1 (Reset), J4, R3 |
+| Links unten | R4, R6, R2, SW2 (Flash), J5, TP2 (GND), TP4 (3,3 V) |
+| Oben Mitte | **U2** (4050), C4, TP5 (SCAN), TP6 (GND), C8 |
+| Mitte | C3, C1, darunter **U4** (Wandlermodul) und C6 |
+| Rechts oben | R5, **J3**, **J1**, D1, D2; Kabelbinder-Bohrungen H1/H2 |
+| Rechts unten | J6, TP3 (5 V), TP1 (GND), D3/D4/R7/R8 stehend, **U3** (74HCT08), C5; H3/H4 |
+
+Die Kabelführung an H1–H4 ist als Sperrfläche `Kabelmontage` bzw.
+`Kabelmontage_1` für Footprints markiert.
 
 Abstände der Abblockkondensatoren zu ihrem Versorgungspin: C3 → U1/8 = 3,4 mm,
 C4 → U2/1 = 3,5 mm, C5 → U3/14 = 3,4 mm.
