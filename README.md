@@ -1,13 +1,73 @@
 # homie-hood-control
 
-ESP8266-basiertes IoT-Modul zur Integration einer Dunstabzugshaube in die Hausautomation über MQTT.
+ESP8266-basiertes IoT-Modul, das eine Dunstabzugshaube (Gutmann Sombra) über
+WLAN und MQTT in die Hausautomation einbindet. Die Platine sitzt im Kabel
+zwischen Haubenelektronik und Bedienfeld, liest die LEDs des Bedienfelds mit
+und kann Tastendrücke nachbilden – das Original-Bedienfeld funktioniert dabei
+unverändert weiter.
 
-- [Änderungsverlauf](CHANGELOG.md)
-- [Betrieb, Diagnose und Flashen](docs/OPERATIONS.md)
-- [Wie die Schaltung funktioniert](docs/SCHALTUNG.md) – verständliche Erklärung der Hardware
-- [Hardware-Designnotizen](kicad/DESIGN.md) – Bauteilwerte, Beschaffung, Layout
+## Dokumentation
 
-## Netzwerk und Diagnose
+| Dokument | Inhalt |
+|---|---|
+| [Wie die Schaltung funktioniert](docs/SCHALTUNG.md) | Verständliche Erklärung der Hardware: Tastenmatrix der Haube, Pegelwandler, Stromversorgung, Firmware-Timing, Fehlersuche |
+| [Hardware-Designnotizen](kicad/DESIGN.md) | Bauteilwerte, Beschaffung, Layout-Entscheidungen, Inbetriebnahme-Befunde |
+| [Fertigungsdaten](kicad/fab/FAB.md) | Gerber/Bohrdaten und Bestellparameter für PCBWay |
+| [Betrieb, Diagnose und Flashen](docs/OPERATIONS.md) | Einrichtung, OTA- und serielles Flashen, Diagnose |
+| [Änderungsverlauf](CHANGELOG.md) | Firmware-Versionen |
+
+## Stand
+
+- **Hardware:** Platine Rev. 0.3 (KiCad 10), siehe [Schaltplan](kicad/schematic.pdf)
+  und [Layout](kicad/board-layout.pdf). Die gefertigten Rev.-0.2-Platinen
+  laufen mit einer Nachrüstung an U3 (Dioden + Pull-downs, siehe
+  [DESIGN.md](kicad/DESIGN.md)).
+- **Firmware:** 0.0.9, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
+
+## Projektstruktur
+
+```
+src/main.cpp          Firmware
+platformio.ini        Build-Konfiguration (serielles und OTA-Flashen)
+docs/                 Betriebs- und Schaltungsbeschreibung
+kicad/                Schaltplan, Platine, eigene Footprints und 3D-Modelle
+kicad/fab/            Fertigungsdaten
+fritzing/             Lochraster-Version von 2017 (nur noch als Referenz)
+```
+
+## Firmware bauen und flashen
+
+```bash
+pio run -e nodemcuv2-ota -t upload
+```
+
+Das flasht per WLAN (OTA) auf `hood-control.local`. Für das erste Flashen
+oder zur Rettung gibt es `-e nodemcuv2` über einen USB-Seriell-Adapter an J2;
+dafür muss der Jumper J5 auf FLASH stehen. Details in
+[OPERATIONS.md](docs/OPERATIONS.md).
+
+## MQTT
+
+Alle Topics liegen unter dem konfigurierten Präfix (Standard
+`home/kitchen/hood`). Home Assistant erkennt das Gerät automatisch per
+MQTT-Discovery (`homeassistant/…`).
+
+| Topic | Werte | Bedeutung |
+|---|---|---|
+| `ventilation/state`, `ventilation/set` | `0`–`4` | Lüfterstufe, `0` = aus |
+| `light/state`, `light/set` | `true` / `false` | Licht |
+| `timer/state`, `timer/set` | `true` / `false` | Nachlauf-Timer |
+| `maintenance/state` | `true` / `false` | Filter-Reinigungsanzeige |
+| `maintenance/set` | beliebig | setzt die Filteranzeige zurück (6 s Tastendruck, nur wenn sie aktiv ist) |
+
+Diagnose:
+
+- `diagnostics`: zusammengefasster JSON-Status
+- `$wifi_rssi`, `$uptime`, `$reset_reason`, `$firmware`, `$ip`, `$last_error`
+- `events`: gepufferte Verbindungsereignisse seit dem letzten MQTT-Kontakt
+- `$online`: Verfügbarkeit über MQTT Last Will
+
+## Netzwerk
 
 Wenn das gespeicherte WLAN 20 Sekunden lang nicht erreichbar ist, startet die
 Firmware den geschützten Hotspot `HoodControl-Setup`. Das Konfigurationsportal
@@ -15,12 +75,11 @@ ist unter `http://192.168.4.1` erreichbar. Parallel versucht das Gerät weiterhi
 das gespeicherte WLAN zu erreichen; nach einer stabilen Verbindung wird der
 Hotspot wieder beendet.
 
-Unterhalb des konfigurierten MQTT-Präfixes werden Diagnosewerte veröffentlicht:
+Die blaue LED auf dem ESP-Modul zeigt den Zustand: schnelles Blinken = WLAN
+verbindet, mittleres = MQTT verbindet, langsames = Hotspot aktiv, kurzer
+Blitz alle 3 s = alles in Ordnung.
 
-- `diagnostics`: zusammengefasster JSON-Status
-- `$wifi_rssi`, `$uptime`, `$reset_reason`, `$firmware`, `$ip`, `$last_error`
-- `events`: gepufferte Verbindungsereignisse seit dem letzten MQTT-Kontakt
-- `$online`: Verfügbarkeit über MQTT Last Will
+## Hintergrund
 
-Weitere Informationen im Blog-Artikel:  
+Blog-Artikel zur ursprünglichen Lochraster-Version:
 [Do-It-Yourself IoT Modul für die Dunstabzugshaube](https://joachim-wilke.de/blog/2017/12/27/do-it-yourself-iot-modul-fur-die-dunstabzugshaube/)
