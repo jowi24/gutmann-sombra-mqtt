@@ -23,3 +23,6 @@ _autosave-*
 # Wegwerf-Testprojekte aus dem MCP-Debugging
 kicad/test/
 kicad/test-junction/
+
+# Python
+__pycache__/
