@@ -26,7 +26,7 @@ Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
   und [Layout](kicad/board-layout.pdf). Die gefertigten Rev.-0.2-Platinen
   laufen mit einer Nachrüstung an U3 (Dioden + Pull-downs, siehe
   [DESIGN.de.md](kicad/DESIGN.de.md)).
-- **Firmware:** 0.0.9, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
+- **Firmware:** 0.0.10, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
 
 ## Projektstruktur
 

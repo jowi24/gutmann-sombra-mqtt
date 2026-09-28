@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 
 #define FW_NAME    "HoodControl"
-#define FW_VERSION "0.0.9"
+#define FW_VERSION "0.0.10"
 
 const char* const CONFIG_PORTAL_SSID     = FW_NAME "-Setup";
 // Override both via build_flags, see docs/OPERATIONS.md

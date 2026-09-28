@@ -4,6 +4,16 @@
 
 All notable changes to the firmware are recorded in this document.
 
+## 0.0.10 - 2026-09-28
+
+### Changed
+
+- The configuration hotspot password and the default MQTT broker are no
+  longer hard-coded personal values. Defaults are `hoodcontrol` and
+  `mqtt.local`; override them via the `PORTAL_PASSWORD` and `MQTT_HOST`
+  build flags, see [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+- Firmware is now licensed under MIT.
+
 ## 0.0.9 - 2026-09-26
 
 Adaptation to the fabricated PCB (rev. 0.3), see

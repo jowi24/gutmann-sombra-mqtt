@@ -31,7 +31,7 @@ All documents are also available in German (`*.de.md`).
   the [layout](kicad/board-layout.pdf). The fabricated rev. 0.2 boards work
   after a small modification at U3 (diodes + pull-downs, see
   [DESIGN.md](kicad/DESIGN.md)).
-- **Firmware:** 0.0.9, PlatformIO, source in [`src/main.cpp`](src/main.cpp).
+- **Firmware:** 0.0.10, PlatformIO, source in [`src/main.cpp`](src/main.cpp).
 
 ## Project layout
 

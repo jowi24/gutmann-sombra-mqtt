@@ -5,6 +5,16 @@
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
+## 0.0.10 - 2026-09-28
+
+### Geändert
+
+- Passwort des Konfigurations-Hotspots und Standard-MQTT-Broker sind keine
+  fest eingetragenen persönlichen Werte mehr. Standard sind `hoodcontrol`
+  und `mqtt.local`; überschreibbar über die Build-Flags `PORTAL_PASSWORD`
+  und `MQTT_HOST`, siehe [`docs/OPERATIONS.de.md`](docs/OPERATIONS.de.md).
+- Die Firmware steht jetzt unter der MIT-Lizenz.
+
 ## 0.0.9 - 2026-09-26
 
 Anpassung an die gefertigte Platine (Rev. 0.3), siehe [`docs/CIRCUIT.de.md`](docs/CIRCUIT.de.md).
