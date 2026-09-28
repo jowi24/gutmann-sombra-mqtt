@@ -32,7 +32,7 @@ und kann sich ändern.
 - Dieses Verhalten funktionierte mehrere Wochen.
 - Anschließend blieb das Gerät etwa fünf Tage dauerhaft in MQTT offline.
 - Im Pi-hole erschien nach einem Neustart keine DNS-Anfrage für
-  `mqtt.local`.
+  den MQTT-Broker.
 - Die bekannten DHCP-Einträge gehörten nicht zum Gerät; dessen MAC-Adresse war
   dort nicht vorhanden.
 - Nach dem Ausbau und einem Start an einem Standort mit stärkerem WLAN
@@ -78,11 +78,21 @@ Ein erfolgreicher Betrieb über USB kann eine schwache oder instabile
 | Eigenschaft | Wert |
 | --- | --- |
 | SSID | `HoodControl-Setup` |
-| Passwort | `REMOVED` |
+| Passwort | `hoodcontrol` (Standard, siehe unten) |
 | Portal | `http://192.168.4.1` |
 
 Das Passwort muss mindestens acht Zeichen lang sein, da der ESP8266-Hotspot
 sonst nicht als geschütztes WLAN gestartet werden kann.
+
+Das Standardpasswort ist öffentlich. Ein eigenes Passwort und den
+Standard-MQTT-Broker (der Broker lässt sich auch später im Portal ändern)
+beim Bauen setzen, z. B. in `platformio.ini`:
+
+```ini
+build_flags =
+  -D PORTAL_PASSWORD='"mein-geheimes-pw"'
+  -D MQTT_HOST='"mqtt.example.lan"'
+```
 
 Nach dem Speichern neuer WLAN- oder MQTT-Einstellungen startet das Gerät
 kontrolliert neu.

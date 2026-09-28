@@ -10,7 +10,15 @@
 #define FW_VERSION "0.0.9"
 
 const char* const CONFIG_PORTAL_SSID     = FW_NAME "-Setup";
-const char* const CONFIG_PORTAL_PASSWORD = "REMOVED";
+// Override both via build_flags, see docs/OPERATIONS.md
+#ifndef PORTAL_PASSWORD
+#define PORTAL_PASSWORD "hoodcontrol"  // at least 8 characters
+#endif
+#ifndef MQTT_HOST
+#define MQTT_HOST "mqtt.local"
+#endif
+
+const char* const CONFIG_PORTAL_PASSWORD = PORTAL_PASSWORD;
 const unsigned long WIFI_RETRY_INTERVAL  = 10000;
 const unsigned long PORTAL_RETRY_INTERVAL = 30000;
 const unsigned long PORTAL_START_DELAY   = 20000;
@@ -31,7 +39,7 @@ const int ledPin2     =  5; // D1
 const int statusLedPin =  2; // D4, onboard blue LED (ESP-12), active LOW
 
 // MQTT config (defaults, overridden by stored config)
-char mqtt_host[64]   = "mqtt.local";
+char mqtt_host[64]   = MQTT_HOST;
 char mqtt_port[6]    = "1883";
 char mqtt_prefix[64] = "home/kitchen/hood";
 char device_name[32] = "hood-control";

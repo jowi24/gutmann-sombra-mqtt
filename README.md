@@ -93,11 +93,11 @@ Blog post about the original 2017 perfboard version (German):
 
 ## License
 
-Copyright (c) 2017–2026 Joachim Wilke. Free for **non-commercial** use only;
-commercial use (e.g. selling boards, kits or products based on this project)
+Copyright (c) 2017–2026 Joachim Wilke. The firmware is open source (MIT). Hardware
+and documentation are free for **non-commercial** use only; commercial use (e.g. selling boards, kits or products based on this project)
 requires the author's permission.
 
-- **Firmware** (`src/`, `platformio.ini`): [PolyForm Noncommercial 1.0.0](LICENSE)
+- **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
 - **Hardware and documentation** (`kicad/`, `fritzing/`, `docs/`, Markdown files):
   [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
 

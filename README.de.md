@@ -90,12 +90,12 @@ Blog-Artikel zur ursprünglichen Lochraster-Version:
 
 ## Lizenz
 
-Copyright (c) 2017–2026 Joachim Wilke. Die Nutzung ist nur für
-**nicht-kommerzielle** Zwecke frei. Kommerzielle Nutzung (z. B. Verkauf von
+Copyright (c) 2017–2026 Joachim Wilke. Die Firmware ist Open Source (MIT).
+Hardware und Dokumentation sind nur für **nicht-kommerzielle** Zwecke frei. Kommerzielle Nutzung (z. B. Verkauf von
 Platinen, Bausätzen oder darauf basierenden Produkten) erfordert die
 Zustimmung des Autors.
 
-- **Firmware** (`src/`, `platformio.ini`): [PolyForm Noncommercial 1.0.0](LICENSE)
+- **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
 - **Hardware und Dokumentation** (`kicad/`, `fritzing/`, `docs/`, Markdown-Dateien):
   [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
 

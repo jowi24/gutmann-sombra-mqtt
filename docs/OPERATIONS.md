@@ -30,7 +30,7 @@ may change.
 - The device is regularly disconnected from power once or twice a day.
 - This worked for several weeks.
 - Afterwards the device stayed offline in MQTT for about five days.
-- After a restart, Pi-hole showed no DNS query for `mqtt.local`.
+- After a restart, Pi-hole showed no DNS query for the MQTT broker.
 - The known DHCP leases did not belong to the device; its MAC address was
   not present.
 - After removing it and starting it at a location with stronger Wi-Fi, the
@@ -73,11 +73,21 @@ operation over USB can hide a weak or unstable 3.3 V supply.
 | Property | Value |
 | --- | --- |
 | SSID | `HoodControl-Setup` |
-| Password | `REMOVED` |
+| Password | `hoodcontrol` (default, see below) |
 | Portal | `http://192.168.4.1` |
 
 The password must be at least eight characters long, otherwise the ESP8266
 cannot start the hotspot as a protected network.
+
+The default password is public. Set your own at build time, together with
+the default MQTT broker (the broker can also be changed later in the
+portal), e.g. in `platformio.ini`:
+
+```ini
+build_flags =
+  -D PORTAL_PASSWORD='"my-secret-pw"'
+  -D MQTT_HOST='"mqtt.example.lan"'
+```
 
 After saving new Wi-Fi or MQTT settings the device restarts in a controlled
 way.
