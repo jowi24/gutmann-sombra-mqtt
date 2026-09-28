@@ -87,3 +87,16 @@ Blitz alle 3 s = alles in Ordnung.
 
 Blog-Artikel zur ursprünglichen Lochraster-Version:
 [Do-It-Yourself IoT Modul für die Dunstabzugshaube](https://joachim-wilke.de/blog/2017/12/27/do-it-yourself-iot-modul-fur-die-dunstabzugshaube/)
+
+## Lizenz
+
+Copyright (c) 2017–2026 Joachim Wilke. Die Nutzung ist nur für
+**nicht-kommerzielle** Zwecke frei. Kommerzielle Nutzung (z. B. Verkauf von
+Platinen, Bausätzen oder darauf basierenden Produkten) erfordert die
+Zustimmung des Autors.
+
+- **Firmware** (`src/`, `platformio.ini`): [PolyForm Noncommercial 1.0.0](LICENSE)
+- **Hardware und Dokumentation** (`kicad/`, `fritzing/`, `docs/`, Markdown-Dateien):
+  [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
+
+Die von der Firmware verwendeten Fremdbibliotheken behalten ihre eigenen Lizenzen.
