@@ -4,6 +4,15 @@
 
 All notable changes to the firmware are recorded in this document.
 
+## 0.0.11 - 2026-10-12
+
+### Added
+
+- Home Assistant discovery now announces a "Filterreinigung zurücksetzen"
+  (reset filter indicator) button. It publishes to `maintenance/set` and only
+  has an effect while the filter indicator is on. Previously this was only
+  possible by publishing to MQTT by hand.
+
 ## 0.0.10 - 2026-09-28
 
 ### Changed

@@ -5,6 +5,14 @@
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
+## 0.0.11 - 2026-10-12
+
+### Hinzugefügt
+
+- Home-Assistant-Discovery meldet jetzt einen Button „Filterreinigung
+  zurücksetzen“. Er sendet an `maintenance/set` und wirkt nur, solange die
+  Filteranzeige aktiv ist. Bisher ging das nur per MQTT von Hand.
+
 ## 0.0.10 - 2026-09-28
 
 ### Geändert

@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 
 #define FW_NAME    "HoodControl"
-#define FW_VERSION "0.0.10"
+#define FW_VERSION "0.0.11"
 
 const char* const CONFIG_PORTAL_SSID     = FW_NAME "-Setup";
 // Override both via build_flags, see docs/OPERATIONS.md
@@ -448,6 +448,22 @@ void publishDiscovery() {
 		doc["icon"]              = "mdi:air-filter";
 		addDevice(doc);
 		publish("binary_sensor", "maintenance", doc);
+	}
+
+	// --- Maintenance reset (button) ---
+	// Wirkt nur, wenn die Filteranzeige aktiv ist (siehe maintenance/set)
+	{
+		JsonDocument doc;
+		doc["name"]              = "Filterreinigung zurücksetzen";
+		doc["unique_id"]         = dev_id + "_maintenance_reset";
+		doc["command_topic"]     = prefix + "/maintenance/set";
+		doc["payload_press"]     = "reset";
+		doc["availability_topic"] = avail;
+		doc["payload_available"]  = "true";
+		doc["payload_not_available"] = "false";
+		doc["icon"]              = "mdi:restore";
+		addDevice(doc);
+		publish("button", "maintenance_reset", doc);
 	}
 
 	discoveryPending = !success;
