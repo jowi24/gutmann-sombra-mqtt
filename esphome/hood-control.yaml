@@ -1,0 +1,104 @@
+# ESPHome firmware for the hood-control board (PCB rev. 0.2/0.3).
+# Alternative to the PlatformIO firmware in src/, see README.md.
+
+substitutions:
+  name: hood-control
+  friendly_name: Abzugshaube
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  project:
+    name: jowi24.gutmann-sombra
+    version: "0.1.0"
+
+esp8266:
+  board: nodemcuv2
+
+external_components:
+  - source:
+      type: local
+      path: components
+  # Without a local checkout:
+  # - source: github://jowi24/gutmann-sombra-mqtt@master
+  #   components: [sombra_hood]
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Same settings as the PlatformIO firmware: the hood supply is stable enough.
+  output_power: 20.5dB
+  power_save_mode: none
+  # Setup hotspot if the stored network is unreachable
+  ap:
+    ssid: HoodControl-Setup
+    password: !secret ap_password
+
+captive_portal:
+
+# Blue LED on the ESP-12E module
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true
+
+sombra_hood:
+  scan_pin: GPIO13
+  led_pin_1: GPIO4
+  led_pin_2: GPIO5
+  key_pin_1: GPIO14
+  key_pin_2: GPIO12
+
+fan:
+  - platform: sombra_hood
+    name: Lüftung
+
+light:
+  - platform: sombra_hood
+    name: Haubenlicht
+    # The state comes from the hood; never switch on after a reboot.
+    restore_mode: ALWAYS_OFF
+
+switch:
+  - platform: sombra_hood
+    name: Nachlauf-Timer
+
+binary_sensor:
+  - platform: sombra_hood
+    name: Filterreinigung
+
+button:
+  - platform: sombra_hood
+    name: Filteranzeige zurücksetzen
+  - platform: restart
+    name: Neustart
+
+# Diagnostics
+debug:
+  update_interval: 60s
+
+sensor:
+  - platform: wifi_signal
+    name: WLAN-Signal
+  - platform: uptime
+    name: Laufzeit
+
+text_sensor:
+  - platform: version
+    name: ESPHome-Version
+  - platform: debug
+    reset_reason:
+      name: Reset-Grund
+  - platform: wifi_info
+    ip_address:
+      name: IP-Adresse

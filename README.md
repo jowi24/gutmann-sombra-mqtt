@@ -21,6 +21,7 @@ The original front panel keeps working as before.
 | [Hardware design notes](kicad/DESIGN.md) | Part values, sourcing, layout decisions, bring-up findings |
 | [Fabrication files](kicad/fab/FAB.md) | Gerber/drill files and PCB order parameters |
 | [Operation, diagnostics and flashing](docs/OPERATIONS.md) | Setup, OTA and serial flashing, diagnostics |
+| [ESPHome firmware](esphome/README.md) | Alternative firmware as an ESPHome external component |
 | [Changelog](CHANGELOG.md) | Firmware versions |
 
 All documents are also available in German (`*.de.md`).
@@ -32,6 +33,8 @@ All documents are also available in German (`*.de.md`).
   after a small modification at U3 (diodes + pull-downs, see
   [DESIGN.md](kicad/DESIGN.md)).
 - **Firmware:** 0.0.10, PlatformIO, source in [`src/main.cpp`](src/main.cpp).
+  Alternatively an [ESPHome firmware](esphome/README.md) for the same
+  hardware (not yet tested on the hood).
 
 ## Project layout
 
@@ -42,6 +45,7 @@ docs/                 operation and circuit description
 kicad/                schematic, PCB, custom footprint and 3D model
 kicad/fab/            fabrication files
 fritzing/             2017 perfboard version (reference only)
+esphome/              alternative ESPHome firmware (external component + YAML)
 ```
 
 ## Building and flashing the firmware
@@ -97,7 +101,7 @@ Copyright (c) 2017–2026 Joachim Wilke. The firmware is open source (MIT). Hard
 and documentation are free for **non-commercial** use only; commercial use (e.g. selling boards, kits or products based on this project)
 requires the author's permission.
 
-- **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
+- **Firmware** (`src/`, `platformio.ini`, `esphome/` except Markdown files): [MIT](LICENSE)
 - **Hardware and documentation** (`kicad/`, `fritzing/`, `docs/`, Markdown files):
   [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
 

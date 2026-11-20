@@ -16,6 +16,7 @@ unverändert weiter.
 | [Hardware-Designnotizen](kicad/DESIGN.de.md) | Bauteilwerte, Beschaffung, Layout-Entscheidungen, Inbetriebnahme-Befunde |
 | [Fertigungsdaten](kicad/fab/FAB.de.md) | Gerber/Bohrdaten und Bestellparameter für PCBWay |
 | [Betrieb, Diagnose und Flashen](docs/OPERATIONS.de.md) | Einrichtung, OTA- und serielles Flashen, Diagnose |
+| [ESPHome-Firmware](esphome/README.de.md) | Alternative Firmware als ESPHome External Component |
 | [Änderungsverlauf](CHANGELOG.de.md) | Firmware-Versionen |
 
 Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
@@ -27,6 +28,8 @@ Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
   laufen mit einer Nachrüstung an U3 (Dioden + Pull-downs, siehe
   [DESIGN.de.md](kicad/DESIGN.de.md)).
 - **Firmware:** 0.0.10, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
+  Alternativ gibt es eine [ESPHome-Firmware](esphome/README.de.md) für
+  dieselbe Hardware (an der Haube noch nicht getestet).
 
 ## Projektstruktur
 
@@ -37,6 +40,7 @@ docs/                 Betriebs- und Schaltungsbeschreibung
 kicad/                Schaltplan, Platine, eigene Footprints und 3D-Modelle
 kicad/fab/            Fertigungsdaten
 fritzing/             Lochraster-Version von 2017 (nur noch als Referenz)
+esphome/              alternative ESPHome-Firmware (External Component + YAML)
 ```
 
 ## Firmware bauen und flashen
@@ -95,7 +99,7 @@ Hardware und Dokumentation sind nur für **nicht-kommerzielle** Zwecke frei. Kom
 Platinen, Bausätzen oder darauf basierenden Produkten) erfordert die
 Zustimmung des Autors.
 
-- **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
+- **Firmware** (`src/`, `platformio.ini`, `esphome/` außer Markdown-Dateien): [MIT](LICENSE)
 - **Hardware und Dokumentation** (`kicad/`, `fritzing/`, `docs/`, Markdown-Dateien):
   [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
 

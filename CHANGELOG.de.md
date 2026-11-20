@@ -5,6 +5,15 @@
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
+## Unveröffentlicht
+
+### Hinzugefügt
+
+- Alternative ESPHome-Firmware in [`esphome/`](esphome/README.de.md):
+  External Component `sombra_hood` mit der ISR-Logik der Arduino-Firmware
+  sowie Plattformen für Lüfter, Licht, Schalter, Binärsensor und Button.
+  An der Haube noch nicht getestet.
+
 ## 0.0.10 - 2026-09-28
 
 ### Geändert
