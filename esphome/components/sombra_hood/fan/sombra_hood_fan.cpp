@@ -14,7 +14,6 @@ void SombraHoodFan::setup() {
 void SombraHoodFan::dump_config() { LOG_FAN("", "Gutmann Sombra fan", this); }
 
 void SombraHoodFan::control(const fan::FanCall &call) {
-  const uint8_t current = this->parent_->get_speed();
   const bool on = call.get_state().value_or(this->state);
   uint8_t target = 0;
   if (on) {
@@ -22,18 +21,12 @@ void SombraHoodFan::control(const fan::FanCall &call) {
     if (target < 1 || target > 4)
       target = 1;
   }
-
-  if (target == current)
-    return;
-  if (target == 0) {
-    // Pressing the key of the active speed switches the fan off.
-    this->parent_->press(current);
-  } else {
-    this->parent_->press(target);
-  }
+  this->parent_->request_speed(target);
 }
 
 void SombraHoodFan::on_leds_updated(bool force) {
+  if (this->parent_->has_pending_speed())
+    return;
   const uint8_t speed = this->parent_->get_speed();
   const bool state = speed != 0;
   if (this->published_ && state == this->state && (!state || speed == this->speed))

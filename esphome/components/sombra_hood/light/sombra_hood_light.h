@@ -18,13 +18,12 @@ class SombraHoodLight : public light::LightOutput, public SombraHoodListener, pu
   void write_state(light::LightState *state) override {
     bool on;
     state->current_values_as_binary(&on);
-    // Also called when on_leds_updated() syncs the light state; the key is
-    // only pressed if the hood differs from the requested state.
-    if (on != this->parent_->get_led(KEY_LIGHT))
-      this->parent_->press(KEY_LIGHT);
+    // Also called when on_leds_updated() syncs the light state; such a
+    // request matches the LED and is dropped without pressing.
+    this->parent_->request_state(KEY_LIGHT, on);
   }
   void on_leds_updated(bool force) override {
-    if (this->state_ == nullptr)
+    if (this->state_ == nullptr || this->parent_->has_pending(KEY_LIGHT))
       return;
     const bool on = this->parent_->get_led(KEY_LIGHT);
     if (this->state_->remote_values.is_on() == on)

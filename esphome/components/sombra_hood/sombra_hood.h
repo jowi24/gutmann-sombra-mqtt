@@ -73,6 +73,14 @@ class SombraHood : public Component
   // not synced, because the decision to press may be based on stale LEDs.
   void press(uint8_t key, uint16_t rounds = PRESS_ROUNDS_SHORT);
 
+  // Requests a target state. The key is pressed at most once per request and
+  // only if the LEDs differ, so repeated commands cannot toggle twice.
+  void request_state(uint8_t key, bool on);
+  // Target fan speed 1-4, 0 = off.
+  void request_speed(uint8_t speed);
+  bool has_pending(uint8_t key) const { return this->requests_[key].target >= 0; }
+  bool has_pending_speed() const { return this->speed_request_.target >= 0; }
+
   // Stops the timer and the SCAN interrupt, e.g. during OTA updates.
   void pause();
   void resume();
@@ -87,6 +95,14 @@ class SombraHood : public Component
   void update_led_counter_(uint8_t key, bool level);
   void release_keys_();
   void notify_listeners_(bool force);
+
+  struct Request {
+    int8_t target{-1};  // -1 = none
+    bool pressed{false};
+    uint32_t pressed_ms{0};
+  };
+  bool set_request_(Request &request, int8_t target, const char *what);
+  void process_request_(Request &request, int8_t current, uint8_t key, const char *what);
 
   static SombraHood *instance;
 
@@ -117,6 +133,8 @@ class SombraHood : public Component
   uint32_t last_reconcile_ms_{0};
   uint32_t led_changed_ms_{0};
   bool synced_{false};
+  Request requests_[NUM_KEYS];
+  Request speed_request_;
 
   std::vector<SombraHoodListener *> listeners_;
 };

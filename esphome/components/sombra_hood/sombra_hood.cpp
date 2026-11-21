@@ -32,6 +32,8 @@ static constexpr uint32_t PRESS_SETTLE_MS = 1500;
 // a few ms before the new one comes on. Wait for the LEDs to settle so that
 // no short "off" is reported in between.
 static constexpr uint32_t LED_SETTLE_MS = 200;
+// Give up on a request if the hood has not switched this long after the press.
+static constexpr uint32_t REQUEST_TIMEOUT_MS = 5000;
 
 SombraHood *SombraHood::instance = nullptr;
 
@@ -112,10 +114,24 @@ void SombraHood::loop() {
   if (changed)
     this->led_changed_ms_ = now;
 
-  if (!this->synced_)
+  if (!this->synced_) {
+    this->requests_[KEY_LIGHT] = {};
+    this->requests_[KEY_TIMER] = {};
+    this->speed_request_ = {};
     return;
+  }
 
-  if (this->led_changed_ms_ != 0 && now - this->led_changed_ms_ >= LED_SETTLE_MS) {
+  bool settled = this->led_changed_ms_ == 0 || now - this->led_changed_ms_ >= LED_SETTLE_MS;
+  if (settled) {
+    this->process_request_(this->requests_[KEY_LIGHT], this->led_states_[KEY_LIGHT], KEY_LIGHT, "light");
+    this->process_request_(this->requests_[KEY_TIMER], this->led_states_[KEY_TIMER], KEY_TIMER, "timer");
+    const uint8_t speed = this->get_speed();
+    const int8_t target = this->speed_request_.target;
+    // Pressing the key of the active speed switches the fan off.
+    this->process_request_(this->speed_request_, speed, target > 0 ? target : speed, "speed");
+  }
+
+  if (this->led_changed_ms_ != 0 && settled) {
     this->led_changed_ms_ = 0;
     ESP_LOGD(TAG, "LEDs: speed=%u timer=%s light=%s maintenance=%s", this->get_speed(),
              ONOFF(this->led_states_[KEY_TIMER]), ONOFF(this->led_states_[KEY_LIGHT]),
@@ -129,7 +145,8 @@ void SombraHood::loop() {
   if (pressing)
     this->last_press_ms_ = now;
 
-  if (!pressing && this->led_changed_ms_ == 0 && now - this->last_press_ms_ >= PRESS_SETTLE_MS &&
+  const bool pending = this->has_pending(KEY_LIGHT) || this->has_pending(KEY_TIMER) || this->has_pending_speed();
+  if (!pressing && !pending && this->led_changed_ms_ == 0 && now - this->last_press_ms_ >= PRESS_SETTLE_MS &&
       now - this->last_reconcile_ms_ >= RECONCILE_INTERVAL_MS) {
     this->last_reconcile_ms_ = now;
     this->notify_listeners_(true);
@@ -159,6 +176,53 @@ void SombraHood::press(uint8_t key, uint16_t rounds) {
   ESP_LOGD(TAG, "Pressing key %u for %u ms", key, rounds * 4);
   this->key_counter_[key] = rounds;
   this->last_press_ms_ = millis();
+}
+
+void SombraHood::request_state(uint8_t key, bool on) {
+  if (key != KEY_LIGHT && key != KEY_TIMER)
+    return;
+  this->set_request_(this->requests_[key], on ? 1 : 0, key == KEY_LIGHT ? "light" : "timer");
+}
+
+void SombraHood::request_speed(uint8_t speed) {
+  if (speed > KEY_SPEED_4)
+    return;
+  this->set_request_(this->speed_request_, speed, "speed");
+}
+
+bool SombraHood::set_request_(Request &request, int8_t target, const char *what) {
+  if (!this->synced_) {
+    ESP_LOGW(TAG, "Not synchronised with the hood, ignoring %s request", what);
+    return false;
+  }
+  // A repeated identical command must not press the key a second time.
+  if (request.target == target)
+    return true;
+  request.target = target;
+  request.pressed = false;
+  return true;
+}
+
+void SombraHood::process_request_(Request &request, int8_t current, uint8_t key, const char *what) {
+  if (request.target < 0)
+    return;
+  const uint32_t now = millis();
+  if (current == request.target) {
+    request = {};
+    return;
+  }
+  if (request.pressed) {
+    if (now - request.pressed_ms >= REQUEST_TIMEOUT_MS) {
+      ESP_LOGW(TAG, "Hood did not switch %s to %d", what, request.target);
+      request = {};
+    }
+    return;
+  }
+  if (key == 0 || this->key_counter_[key] != 0)
+    return;
+  this->press(key);
+  request.pressed = true;
+  request.pressed_ms = now;
 }
 
 void SombraHood::pause() {

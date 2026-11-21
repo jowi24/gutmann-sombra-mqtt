@@ -11,6 +11,8 @@ namespace esphome::sombra_hood {
 class SombraHoodTimerSwitch : public switch_::Switch, public SombraHoodListener, public Parented<SombraHood> {
  public:
   void on_leds_updated(bool force) override {
+    if (this->parent_->has_pending(KEY_TIMER))
+      return;
     const bool on = this->parent_->get_led(KEY_TIMER);
     if (!this->published_ || on != this->state) {
       this->published_ = true;
@@ -20,8 +22,7 @@ class SombraHoodTimerSwitch : public switch_::Switch, public SombraHoodListener,
 
  protected:
   void write_state(bool state) override {
-    if (state != this->parent_->get_led(KEY_TIMER))
-      this->parent_->press(KEY_TIMER);
+    this->parent_->request_state(KEY_TIMER, state);
   }
 
   bool published_{false};
