@@ -2,6 +2,9 @@
 
 # Changelog
 
+Die Firmware ist veraltet; 0.0.11 ist die letzte Version. Die
+Weiterentwicklung findet in [gutmann-sombra-esphome](https://github.com/jowi24/gutmann-sombra-esphome/blob/main/README.de.md) statt.
+
 Alle wesentlichen Änderungen an der Firmware werden in diesem Dokument
 festgehalten.
 
@@ -25,7 +28,7 @@ festgehalten.
 
 ## 0.0.9 - 2026-09-26
 
-Anpassung an die gefertigte Platine (Rev. 0.3), siehe [`docs/CIRCUIT.de.md`](docs/CIRCUIT.de.md).
+Anpassung an die gefertigte Platine (Rev. 0.3), siehe [`docs/CIRCUIT.de.md`](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.de.md).
 
 ### Geändert
 

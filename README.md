@@ -2,14 +2,21 @@
 
 # gutmann-sombra-mqtt
 
-An ESP8266 board that connects a Gutmann Sombra range hood (cooker hood) to
+> [!WARNING]
+> **Deprecated – no longer maintained.** This Arduino/MQTT firmware is
+> superseded by the ESPHome firmware in
+> [gutmann-sombra-esphome](https://github.com/jowi24/gutmann-sombra-esphome), which runs on the same board and can be
+> switched to over the air. The hardware has moved to
+> [gutmann-sombra-pcb](https://github.com/jowi24/gutmann-sombra-pcb). This repository stays available for anyone who
+> does not want to use ESPHome, but will not receive new features or fixes.
+
+Arduino/PlatformIO firmware for an ESP8266 board that connects a Gutmann Sombra range hood (cooker hood) to
 home automation over Wi-Fi and MQTT, with Home Assistant auto-discovery.
 The board sits in the cable between the hood electronics and the front
 panel. It reads which front-panel LEDs are lit and can simulate key presses.
 The original front panel keeps working as before.
 
-- **Hardware:** KiCad 10 PCB, 80 × 55 mm, through-hole except the ESP-12E
-  module, fabrication files included
+- **Hardware:** [gutmann-sombra-pcb](https://github.com/jowi24/gutmann-sombra-pcb)
 - **Firmware:** PlatformIO / Arduino, MQTT with Home Assistant discovery,
   OTA updates, Wi-Fi setup portal
 
@@ -17,9 +24,8 @@ The original front panel keeps working as before.
 
 | Document | Contents |
 |---|---|
-| [How the circuit works](docs/CIRCUIT.md) | Beginner-friendly explanation of the hardware: the hood's key matrix, level shifters, power supply, firmware timing, troubleshooting |
-| [Hardware design notes](kicad/DESIGN.md) | Part values, sourcing, layout decisions, bring-up findings |
-| [Fabrication files](kicad/fab/FAB.md) | Gerber/drill files and PCB order parameters |
+| [How the circuit works](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.md) | In gutmann-sombra-pcb: key matrix, level shifters, power supply, firmware timing |
+| [Hardware design notes](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/kicad/DESIGN.md) | In gutmann-sombra-pcb: part values, layout, bring-up findings |
 | [Operation, diagnostics and flashing](docs/OPERATIONS.md) | Setup, OTA and serial flashing, diagnostics |
 | [Changelog](CHANGELOG.md) | Firmware versions |
 
@@ -27,21 +33,16 @@ All documents are also available in German (`*.de.md`).
 
 ## Status
 
-- **Hardware:** PCB rev. 0.3, see the [schematic](kicad/schematic.pdf) and
-  the [layout](kicad/board-layout.pdf). The fabricated rev. 0.2 boards work
-  after a small modification at U3 (diodes + pull-downs, see
-  [DESIGN.md](kicad/DESIGN.md)).
-- **Firmware:** 0.0.11, PlatformIO, source in [`src/main.cpp`](src/main.cpp).
+- **Firmware:** 0.0.11 (final), PlatformIO, source in
+  [`src/main.cpp`](src/main.cpp). Deprecated, see the note above.
+- **Hardware:** PCB rev. 0.2/0.3, see [gutmann-sombra-pcb](https://github.com/jowi24/gutmann-sombra-pcb).
 
 ## Project layout
 
 ```
 src/main.cpp          firmware
 platformio.ini        build configuration (serial and OTA flashing)
-docs/                 operation and circuit description
-kicad/                schematic, PCB, custom footprint and 3D model
-kicad/fab/            fabrication files
-fritzing/             2017 perfboard version (reference only)
+docs/                 operation, diagnostics and flashing
 ```
 
 ## Building and flashing the firmware
@@ -93,12 +94,9 @@ Blog post about the original 2017 perfboard version (German):
 
 ## License
 
-Copyright (c) 2017–2026 Joachim Wilke. The firmware is open source (MIT). Hardware
-and documentation are free for **non-commercial** use only; commercial use (e.g. selling boards, kits or products based on this project)
-requires the author's permission.
+Copyright (c) 2017–2026 Joachim Wilke.
 
 - **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
-- **Hardware and documentation** (`kicad/`, `fritzing/`, `docs/`, Markdown files):
-  [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
+- **Documentation** (`docs/`, Markdown files): [CC BY-NC-SA 4.0](LICENSE-DOCS)
 
 Third-party libraries used by the firmware keep their own licenses.

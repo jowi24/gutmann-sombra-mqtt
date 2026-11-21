@@ -197,7 +197,7 @@ und aktiviert damit den ROM-Bootloader. Ohne gedrückte Taste startet die
 Anwendungsfirmware.
 
 (Auf der Platine Rev. 0.2/0.3 wählt stattdessen der Jumper J5 zwischen RUN
-und FLASH – siehe [CIRCUIT.de.md](CIRCUIT.de.md), Abschnitt 10.)
+und FLASH – siehe [CIRCUIT.de.md](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.de.md), Abschnitt 10.)
 
 ## Diagnoseablauf bei erneutem Ausfall
 

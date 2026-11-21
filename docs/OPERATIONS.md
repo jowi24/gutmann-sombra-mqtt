@@ -190,7 +190,7 @@ activates the ROM bootloader. Without the button pressed, the application
 firmware starts.
 
 (On the PCB rev. 0.2/0.3 the jumper J5 selects RUN or FLASH instead – see
-[CIRCUIT.md](CIRCUIT.md), section 10.)
+[CIRCUIT.md](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.md), section 10.)
 
 ## Diagnostic procedure after another failure
 

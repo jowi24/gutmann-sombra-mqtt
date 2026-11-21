@@ -2,7 +2,16 @@
 
 # gutmann-sombra-mqtt
 
-ESP8266-basiertes IoT-Modul, das eine Dunstabzugshaube (Gutmann Sombra) über
+> [!WARNING]
+> **Veraltet – wird nicht mehr gepflegt.** Diese Arduino/MQTT-Firmware ist
+> durch die ESPHome-Firmware in
+> [gutmann-sombra-esphome](https://github.com/jowi24/gutmann-sombra-esphome/blob/main/README.de.md) abgelöst, die auf
+> derselben Platine läuft und per OTA eingespielt werden kann. Die Hardware
+> ist nach [gutmann-sombra-pcb](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/README.de.md) umgezogen. Dieses
+> Repository bleibt für alle verfügbar, die ESPHome nicht verwenden
+> möchten, bekommt aber keine neuen Funktionen oder Fehlerbehebungen mehr.
+
+Arduino/PlatformIO-Firmware für ein ESP8266-basiertes IoT-Modul, das eine Dunstabzugshaube (Gutmann Sombra) über
 WLAN und MQTT in die Hausautomation einbindet. Die Platine sitzt im Kabel
 zwischen Haubenelektronik und Bedienfeld, liest die LEDs des Bedienfelds mit
 und kann Tastendrücke nachbilden – das Original-Bedienfeld funktioniert dabei
@@ -12,9 +21,8 @@ unverändert weiter.
 
 | Dokument | Inhalt |
 |---|---|
-| [Wie die Schaltung funktioniert](docs/CIRCUIT.de.md) | Verständliche Erklärung der Hardware: Tastenmatrix der Haube, Pegelwandler, Stromversorgung, Firmware-Timing, Fehlersuche |
-| [Hardware-Designnotizen](kicad/DESIGN.de.md) | Bauteilwerte, Beschaffung, Layout-Entscheidungen, Inbetriebnahme-Befunde |
-| [Fertigungsdaten](kicad/fab/FAB.de.md) | Gerber/Bohrdaten und Bestellparameter für PCBWay |
+| [Wie die Schaltung funktioniert](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.de.md) | In gutmann-sombra-pcb: Tastenmatrix, Pegelwandler, Stromversorgung, Firmware-Timing |
+| [Hardware-Designnotizen](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/kicad/DESIGN.de.md) | In gutmann-sombra-pcb: Bauteilwerte, Layout, Inbetriebnahme-Befunde |
 | [Betrieb, Diagnose und Flashen](docs/OPERATIONS.de.md) | Einrichtung, OTA- und serielles Flashen, Diagnose |
 | [Änderungsverlauf](CHANGELOG.de.md) | Firmware-Versionen |
 
@@ -22,21 +30,16 @@ Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
 
 ## Stand
 
-- **Hardware:** Platine Rev. 0.3 (KiCad 10), siehe [Schaltplan](kicad/schematic.pdf)
-  und [Layout](kicad/board-layout.pdf). Die gefertigten Rev.-0.2-Platinen
-  laufen mit einer Nachrüstung an U3 (Dioden + Pull-downs, siehe
-  [DESIGN.de.md](kicad/DESIGN.de.md)).
-- **Firmware:** 0.0.11, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
+- **Firmware:** 0.0.11 (letzte Version), PlatformIO, Quelltext in
+  [`src/main.cpp`](src/main.cpp). Veraltet, siehe Hinweis oben.
+- **Hardware:** Platine Rev. 0.2/0.3, siehe [gutmann-sombra-pcb](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/README.de.md).
 
 ## Projektstruktur
 
 ```
 src/main.cpp          Firmware
 platformio.ini        Build-Konfiguration (serielles und OTA-Flashen)
-docs/                 Betriebs- und Schaltungsbeschreibung
-kicad/                Schaltplan, Platine, eigene Footprints und 3D-Modelle
-kicad/fab/            Fertigungsdaten
-fritzing/             Lochraster-Version von 2017 (nur noch als Referenz)
+docs/                 Betrieb, Diagnose und Flashen
 ```
 
 ## Firmware bauen und flashen
@@ -90,13 +93,9 @@ Blog-Artikel zur ursprünglichen Lochraster-Version:
 
 ## Lizenz
 
-Copyright (c) 2017–2026 Joachim Wilke. Die Firmware ist Open Source (MIT).
-Hardware und Dokumentation sind nur für **nicht-kommerzielle** Zwecke frei. Kommerzielle Nutzung (z. B. Verkauf von
-Platinen, Bausätzen oder darauf basierenden Produkten) erfordert die
-Zustimmung des Autors.
+Copyright (c) 2017–2026 Joachim Wilke.
 
 - **Firmware** (`src/`, `platformio.ini`): [MIT](LICENSE)
-- **Hardware und Dokumentation** (`kicad/`, `fritzing/`, `docs/`, Markdown-Dateien):
-  [CC BY-NC-SA 4.0](LICENSE-HARDWARE-DOCS)
+- **Dokumentation** (`docs/`, Markdown-Dateien): [CC BY-NC-SA 4.0](LICENSE-DOCS)
 
 Die von der Firmware verwendeten Fremdbibliotheken behalten ihre eigenen Lizenzen.

@@ -2,6 +2,9 @@
 
 # Changelog
 
+The firmware is deprecated; 0.0.11 is the final version. Further
+development happens in [gutmann-sombra-esphome](https://github.com/jowi24/gutmann-sombra-esphome).
+
 All notable changes to the firmware are recorded in this document.
 
 ## 0.0.11 - 2026-10-12
@@ -26,7 +29,7 @@ All notable changes to the firmware are recorded in this document.
 ## 0.0.9 - 2026-09-26
 
 Adaptation to the fabricated PCB (rev. 0.3), see
-[`docs/CIRCUIT.md`](docs/CIRCUIT.md).
+[`docs/CIRCUIT.md`](https://github.com/jowi24/gutmann-sombra-pcb/blob/main/docs/CIRCUIT.md).
 
 ### Changed
 
