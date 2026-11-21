@@ -28,6 +28,10 @@ static constexpr uint16_t MAINTENANCE_OFF_ROUNDS = 375;
 // press for the hood to react.
 static constexpr uint32_t RECONCILE_INTERVAL_MS = 2000;
 static constexpr uint32_t PRESS_SETTLE_MS = 1500;
+// When the hood switches speed on its own (run-on timer), the old LED goes off
+// a few ms before the new one comes on. Wait for the LEDs to settle so that
+// no short "off" is reported in between.
+static constexpr uint32_t LED_SETTLE_MS = 200;
 
 SombraHood *SombraHood::instance = nullptr;
 
@@ -105,11 +109,14 @@ void SombraHood::loop() {
       changed = true;
     }
   }
+  if (changed)
+    this->led_changed_ms_ = now;
 
   if (!this->synced_)
     return;
 
-  if (changed) {
+  if (this->led_changed_ms_ != 0 && now - this->led_changed_ms_ >= LED_SETTLE_MS) {
+    this->led_changed_ms_ = 0;
     ESP_LOGD(TAG, "LEDs: speed=%u timer=%s light=%s maintenance=%s", this->get_speed(),
              ONOFF(this->led_states_[KEY_TIMER]), ONOFF(this->led_states_[KEY_LIGHT]),
              ONOFF(this->led_states_[KEY_MAINTENANCE]));
@@ -122,7 +129,7 @@ void SombraHood::loop() {
   if (pressing)
     this->last_press_ms_ = now;
 
-  if (!pressing && now - this->last_press_ms_ >= PRESS_SETTLE_MS &&
+  if (!pressing && this->led_changed_ms_ == 0 && now - this->last_press_ms_ >= PRESS_SETTLE_MS &&
       now - this->last_reconcile_ms_ >= RECONCILE_INTERVAL_MS) {
     this->last_reconcile_ms_ = now;
     this->notify_listeners_(true);

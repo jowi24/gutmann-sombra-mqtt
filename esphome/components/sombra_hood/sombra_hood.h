@@ -115,6 +115,7 @@ class SombraHood : public Component
   uint32_t synced_since_ms_{0};
   uint32_t last_press_ms_{0};
   uint32_t last_reconcile_ms_{0};
+  uint32_t led_changed_ms_{0};
   bool synced_{false};
 
   std::vector<SombraHoodListener *> listeners_;
