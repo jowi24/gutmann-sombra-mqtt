@@ -49,12 +49,6 @@ cp secrets.yaml.example secrets.yaml   # ausfüllen
 esphome run hood-control.yaml
 ```
 
-Der erste Wechsel von der Arduino-Firmware geht per OTA: mit
-`esphome compile hood-control.yaml` bauen und
-`.esphome/build/hood-control/.pioenvs/hood-control/firmware.bin` mit
-`espota` (dem PlatformIO-OTA) hochladen, oder seriell über J2 mit J5 auf
-FLASH, siehe [OPERATIONS.de.md](../docs/OPERATIONS.de.md).
-
 Ohne lokale Kopie lässt sich die Komponente auch direkt von GitHub holen:
 
 ```yaml
@@ -62,6 +56,61 @@ external_components:
   - source: github://jowi24/gutmann-sombra-mqtt@master
     components: [sombra_hood]
 ```
+
+## Am eingebauten Modul testen (und zurück)
+
+Beide Firmwares lassen sich in beide Richtungen per OTA tauschen; die Haube
+muss dafür nicht geöffnet werden. Beide nutzen dasselbe Flash-Layout (1 MB
+Programm, 2 MB LittleFS) und überschreiben deshalb nicht die Einstellungen
+der jeweils anderen: WLAN-Zugangsdaten (SDK-Bereich) und MQTT-Konfiguration
+der Arduino-Firmware (LittleFS) überstehen den Hin- und Rückweg.
+
+1. Zuerst das Image für den Rückweg bauen, solange sicher ist, dass es dem
+   installierten Stand entspricht (Repo-Wurzel, gleiche `build_flags` wie
+   bisher):
+
+   ```sh
+   pio run -e nodemcuv2-ota
+   ```
+
+2. Per Arduino-OTA auf ESPHome wechseln (kein Passwort):
+
+   ```sh
+   cd esphome
+   esphome compile hood-control.yaml
+   python3 ~/.platformio/packages/framework-arduinoespressif8266/tools/espota.py \
+     -i hood-control.local -f .esphome/build/hood-control/.pioenvs/hood-control/firmware.bin
+   ```
+
+   Home Assistant erkennt das neue ESPHome-Gerät (API-Schlüssel aus
+   `secrets.yaml`). Die MQTT-Entities sind währenddessen nicht verfügbar,
+   Automationen darauf laufen ins Leere.
+
+3. Testen: `esphome logs hood-control.yaml` zeigt `Synchronised with the hood`
+   und jede LED-Änderung. Mit dem Bedienfeld vergleichen, dann Stufe, Licht
+   und Timer aus Home Assistant schalten.
+
+4. Per ESPHome-OTA zurück:
+
+   ```sh
+   esphome upload hood-control.yaml --device hood-control.local \
+     --file ../.pio/build/nodemcuv2-ota/firmware.bin
+   ```
+
+   Danach das ESPHome-Gerät in Home Assistant löschen; die MQTT-Entities
+   kommen von selbst zurück.
+
+Sicherheitsnetze, falls etwas schiefgeht:
+
+- Nach 10 fehlgeschlagenen Starts in Folge startet ESPHome im *Safe Mode*
+  nur mit WLAN und OTA, Schritt 4 funktioniert also weiterhin.
+- Ohne WLAN öffnet ESPHome den Hotspot `HoodControl-Setup`; dessen Portal
+  unter `http://192.168.4.1` nimmt auch ein Firmware-Upload an.
+- Solange die Firmware sie nicht treibt, halten R7/R8 die Tastenausgänge
+  auf LOW – eine abstürzende Firmware kann also keine Tasten drücken.
+- Letzter Ausweg: seriell über J2 mit J5 auf FLASH flashen, siehe
+  [OPERATIONS.de.md](../docs/OPERATIONS.de.md) – dafür muss die Haube
+  geöffnet werden.
 
 ## Hinweise
 

@@ -11,6 +11,12 @@ esphome:
   project:
     name: jowi24.gutmann-sombra
     version: "0.1.0"
+  # Same flash layout as the PlatformIO firmware (1 MB sketch, 2 MB LittleFS).
+  # ESPHome would otherwise use a layout without filesystem and stage OTA images
+  # where the Arduino firmware keeps its LittleFS, wiping its MQTT config when
+  # switching back.
+  platformio_options:
+    board_build.ldscript: eagle.flash.4m2m.ld
 
 esp8266:
   board: nodemcuv2

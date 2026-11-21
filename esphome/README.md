@@ -49,12 +49,6 @@ cp secrets.yaml.example secrets.yaml   # fill in
 esphome run hood-control.yaml
 ```
 
-The first flash from the Arduino firmware can be done over the air: build
-with `esphome compile hood-control.yaml` and upload
-`.esphome/build/hood-control/.pioenvs/hood-control/firmware.bin` with
-`espota` (the PlatformIO OTA), or flash serially via J2 with J5 set to
-FLASH, see [OPERATIONS.md](../docs/OPERATIONS.md).
-
 Without a local checkout, the component can also be pulled from GitHub:
 
 ```yaml
@@ -62,6 +56,59 @@ external_components:
   - source: github://jowi24/gutmann-sombra-mqtt@master
     components: [sombra_hood]
 ```
+
+## Trying it on the installed board (and switching back)
+
+Both firmwares can be swapped over the air in both directions; the hood
+does not need to be opened. Both use the same flash layout (1 MB sketch,
+2 MB LittleFS), so neither overwrites the other's settings: the Wi-Fi
+credentials (SDK area) and the MQTT config of the Arduino firmware
+(LittleFS) survive the round trip.
+
+1. Build the rollback image first, while you are sure it matches what is
+   installed (repository root, same `build_flags` as before):
+
+   ```sh
+   pio run -e nodemcuv2-ota
+   ```
+
+2. Switch to ESPHome via the Arduino OTA (no password):
+
+   ```sh
+   cd esphome
+   esphome compile hood-control.yaml
+   python3 ~/.platformio/packages/framework-arduinoespressif8266/tools/espota.py \
+     -i hood-control.local -f .esphome/build/hood-control/.pioenvs/hood-control/firmware.bin
+   ```
+
+   Home Assistant discovers the new ESPHome device (API encryption key from
+   `secrets.yaml`). The MQTT entities become unavailable meanwhile, and
+   automations using them do nothing.
+
+3. Test: `esphome logs hood-control.yaml` shows `Synchronised with the hood`
+   and every LED change. Compare with the front panel, then switch speed,
+   light and timer from Home Assistant.
+
+4. Switch back via the ESPHome OTA:
+
+   ```sh
+   esphome upload hood-control.yaml --device hood-control.local \
+     --file ../.pio/build/nodemcuv2-ota/firmware.bin
+   ```
+
+   Then delete the ESPHome device in Home Assistant; the MQTT entities come
+   back on their own.
+
+Safety nets if something goes wrong:
+
+- After 10 failed boots in a row ESPHome starts in *safe mode* with only
+  Wi-Fi and OTA, so step 4 still works.
+- Without Wi-Fi, ESPHome opens the `HoodControl-Setup` hotspot; its portal
+  at `http://192.168.4.1` also accepts a firmware upload.
+- Until the firmware drives them, the key outputs are held LOW by R7/R8, so
+  a crashing firmware cannot press keys.
+- Last resort: serial flashing via J2 with J5 set to FLASH, see
+  [OPERATIONS.md](../docs/OPERATIONS.md) – this requires opening the hood.
 
 ## Notes
 
