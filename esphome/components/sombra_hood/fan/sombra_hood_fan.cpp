@@ -36,8 +36,9 @@ void SombraHoodFan::control(const fan::FanCall &call) {
 void SombraHoodFan::on_leds_updated(bool force) {
   const uint8_t speed = this->parent_->get_speed();
   const bool state = speed != 0;
-  if (state == this->state && (!state || speed == this->speed))
+  if (this->published_ && state == this->state && (!state || speed == this->speed))
     return;
+  this->published_ = true;
   this->state = state;
   if (state)
     this->speed = speed;

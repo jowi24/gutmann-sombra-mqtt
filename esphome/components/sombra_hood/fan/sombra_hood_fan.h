@@ -18,6 +18,8 @@ class SombraHoodFan : public Component, public fan::Fan, public SombraHoodListen
 
  protected:
   void control(const fan::FanCall &call) override;
+
+  bool published_{false};
 };
 
 }  // namespace esphome::sombra_hood
