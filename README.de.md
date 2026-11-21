@@ -3,7 +3,8 @@
 # gutmann-sombra-mqtt
 
 ESP8266-basiertes IoT-Modul, das eine Dunstabzugshaube (Gutmann Sombra) über
-WLAN und MQTT in die Hausautomation einbindet. Die Platine sitzt im Kabel
+WLAN in die Hausautomation einbindet – per ESPHome (empfohlen) oder per MQTT
+mit Home-Assistant-Discovery. Die Platine sitzt im Kabel
 zwischen Haubenelektronik und Bedienfeld, liest die LEDs des Bedienfelds mit
 und kann Tastendrücke nachbilden – das Original-Bedienfeld funktioniert dabei
 unverändert weiter.
@@ -16,7 +17,7 @@ unverändert weiter.
 | [Hardware-Designnotizen](kicad/DESIGN.de.md) | Bauteilwerte, Beschaffung, Layout-Entscheidungen, Inbetriebnahme-Befunde |
 | [Fertigungsdaten](kicad/fab/FAB.de.md) | Gerber/Bohrdaten und Bestellparameter für PCBWay |
 | [Betrieb, Diagnose und Flashen](docs/OPERATIONS.de.md) | Einrichtung, OTA- und serielles Flashen, Diagnose |
-| [ESPHome-Firmware](esphome/README.de.md) | Alternative Firmware als ESPHome External Component |
+| [ESPHome-Firmware](esphome/README.de.md) | Empfohlene Firmware: Einrichtung, Entities, Wechsel von/zur Arduino-Firmware |
 | [Änderungsverlauf](CHANGELOG.de.md) | Firmware-Versionen |
 
 Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
@@ -27,23 +28,40 @@ Alle Dokumente gibt es auch auf Englisch (`*.md` ohne `.de`).
   und [Layout](kicad/board-layout.pdf). Die gefertigten Rev.-0.2-Platinen
   laufen mit einer Nachrüstung an U3 (Dioden + Pull-downs, siehe
   [DESIGN.de.md](kicad/DESIGN.de.md)).
-- **Firmware:** 0.0.10, PlatformIO, Quelltext in [`src/main.cpp`](src/main.cpp).
-  Alternativ gibt es eine [ESPHome-Firmware](esphome/README.de.md) für
-  dieselbe Hardware (an der Haube noch nicht getestet).
+- **Firmware:** Die [ESPHome-Firmware](esphome/README.de.md) ist die
+  empfohlene Variante und läuft seit 21.11.2026 auf der Haube des Autors. Die
+  Arduino-Firmware 0.0.10 ([`src/main.cpp`](src/main.cpp)) bleibt für
+  MQTT-Setups und als Rückfallebene erhalten; beide lassen sich per OTA
+  gegeneinander tauschen.
 
 ## Projektstruktur
 
 ```
-src/main.cpp          Firmware
-platformio.ini        Build-Konfiguration (serielles und OTA-Flashen)
+esphome/              ESPHome-Firmware (External Component + YAML), empfohlen
+src/main.cpp          Arduino-Firmware (MQTT), Rückfallebene
+platformio.ini        Build-Konfiguration der Arduino-Firmware
 docs/                 Betriebs- und Schaltungsbeschreibung
 kicad/                Schaltplan, Platine, eigene Footprints und 3D-Modelle
 kicad/fab/            Fertigungsdaten
 fritzing/             Lochraster-Version von 2017 (nur noch als Referenz)
-esphome/              alternative ESPHome-Firmware (External Component + YAML)
 ```
 
-## Firmware bauen und flashen
+## ESPHome-Firmware (empfohlen)
+
+```bash
+cd esphome
+cp secrets.yaml.example secrets.yaml   # ausfüllen
+esphome run hood-control.yaml
+```
+
+Details, Entities und der Wechsel von der Arduino-Firmware per OTA:
+[esphome/README.de.md](esphome/README.de.md).
+
+## Arduino-Firmware (MQTT, Rückfallebene)
+
+Die folgenden Abschnitte gelten nur für die Arduino-Firmware in `src/`.
+
+### Bauen und flashen
 
 ```bash
 pio run -e nodemcuv2-ota -t upload
@@ -54,7 +72,7 @@ oder zur Rettung gibt es `-e nodemcuv2` über einen USB-Seriell-Adapter an J2;
 dafür muss der Jumper J5 auf FLASH stehen. Details in
 [OPERATIONS.de.md](docs/OPERATIONS.de.md).
 
-## MQTT
+### MQTT
 
 Alle Topics liegen unter dem konfigurierten Präfix (Standard
 `home/kitchen/hood`). Home Assistant erkennt das Gerät automatisch per
@@ -75,7 +93,7 @@ Diagnose:
 - `events`: gepufferte Verbindungsereignisse seit dem letzten MQTT-Kontakt
 - `$online`: Verfügbarkeit über MQTT Last Will
 
-## Netzwerk
+### Netzwerk
 
 Wenn das gespeicherte WLAN 20 Sekunden lang nicht erreichbar ist, startet die
 Firmware den geschützten Hotspot `HoodControl-Setup`. Das Konfigurationsportal

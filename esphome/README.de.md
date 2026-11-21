@@ -2,11 +2,15 @@
 
 # ESPHome-Firmware
 
-Alternative zur PlatformIO-Firmware in [`src/`](../src/main.cpp) für
-dieselbe Hardware (Platine Rev. 0.2/0.3). Statt per MQTT-Discovery erscheint
-die Haube über die native ESPHome-API in Home Assistant.
+Empfohlene Firmware für die hood-control-Platine (Rev. 0.2/0.3). Die Haube
+erscheint über die native ESPHome-API in Home Assistant. Die
+Arduino-Firmware in [`src/`](../src/main.cpp) (MQTT) bleibt als
+Rückfallebene erhalten.
 
-> **Stand:** kompiliert mit ESPHome 2026.11, an der Haube noch nicht getestet.
+> **Stand:** läuft seit 21.11.2026 auf der Haube des Autors (ESPHome
+> 2026.11). Getestet: Bedienfeld lesen, alle Tastendrücke, Nachlauf-Timer,
+> Neustart ohne Auswirkung auf die Haube, OTA. Noch nicht getestet:
+> Filter-Reset.
 
 ## Funktionsweise
 

@@ -9,10 +9,15 @@ festgehalten.
 
 ### Hinzugefügt
 
-- Alternative ESPHome-Firmware in [`esphome/`](esphome/README.de.md):
-  External Component `sombra_hood` mit der ISR-Logik der Arduino-Firmware
-  sowie Plattformen für Lüfter, Licht, Schalter, Binärsensor und Button.
-  An der Haube noch nicht getestet.
+- ESPHome-Firmware in [`esphome/`](esphome/README.de.md), jetzt die
+  empfohlene Variante: External Component `sombra_hood` mit der ISR-Logik
+  der Arduino-Firmware sowie Plattformen für Lüfter, Licht, Schalter,
+  Binärsensor und Button. Befehle werden als Zielzustand gespeichert, jede
+  Taste wird pro Befehl höchstens einmal gedrückt. An der Haube getestet.
+
+### Geändert
+
+- Die Arduino-Firmware in `src/` ist jetzt die Rückfallebene für MQTT-Setups.
 
 ## 0.0.10 - 2026-09-28
 

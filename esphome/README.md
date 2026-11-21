@@ -2,11 +2,14 @@
 
 # ESPHome firmware
 
-Alternative to the PlatformIO firmware in [`src/`](../src/main.cpp) for the
-same hardware (PCB rev. 0.2/0.3). Instead of MQTT discovery, the hood shows
-up in Home Assistant through the ESPHome native API.
+Recommended firmware for the hood-control board (PCB rev. 0.2/0.3). The
+hood shows up in Home Assistant through the ESPHome native API. The Arduino
+firmware in [`src/`](../src/main.cpp) (MQTT) remains available as a
+fallback.
 
-> **Status:** compiles with ESPHome 2026.11, not yet tested on the hood.
+> **Status:** running on the author's hood since 2026-11-21 (ESPHome
+> 2026.11). Tested: reading the front panel, all key presses, run-on timer,
+> reboot without affecting the hood, OTA. Not yet tested: filter reset.
 
 ## How it works
 

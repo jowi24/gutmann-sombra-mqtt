@@ -8,10 +8,15 @@ All notable changes to the firmware are recorded in this document.
 
 ### Added
 
-- Alternative ESPHome firmware in [`esphome/`](esphome/README.md): external
-  component `sombra_hood` with the ISR logic of the Arduino firmware plus
-  fan, light, switch, binary sensor and button platforms. Not yet tested on
-  the hood.
+- ESPHome firmware in [`esphome/`](esphome/README.md), now the recommended
+  variant: external component `sombra_hood` with the ISR logic of the
+  Arduino firmware plus fan, light, switch, binary sensor and button
+  platforms. Commands are stored as target states, so each key is pressed at
+  most once per command. Tested on the hood.
+
+### Changed
+
+- The Arduino firmware in `src/` is now the fallback for MQTT setups.
 
 ## 0.0.10 - 2026-09-28
 

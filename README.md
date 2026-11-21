@@ -3,15 +3,18 @@
 # gutmann-sombra-mqtt
 
 An ESP8266 board that connects a Gutmann Sombra range hood (cooker hood) to
-home automation over Wi-Fi and MQTT, with Home Assistant auto-discovery.
+home automation over Wi-Fi, either via ESPHome (recommended) or via MQTT
+with Home Assistant auto-discovery.
 The board sits in the cable between the hood electronics and the front
 panel. It reads which front-panel LEDs are lit and can simulate key presses.
 The original front panel keeps working as before.
 
 - **Hardware:** KiCad 10 PCB, 80 × 55 mm, through-hole except the ESP-12E
   module, fabrication files included
-- **Firmware:** PlatformIO / Arduino, MQTT with Home Assistant discovery,
-  OTA updates, Wi-Fi setup portal
+- **Firmware (recommended):** ESPHome external component, native Home
+  Assistant API, OTA updates, Wi-Fi setup hotspot
+- **Firmware (fallback):** PlatformIO / Arduino, MQTT with Home Assistant
+  discovery, OTA updates, Wi-Fi setup portal
 
 ## Documentation
 
@@ -21,7 +24,7 @@ The original front panel keeps working as before.
 | [Hardware design notes](kicad/DESIGN.md) | Part values, sourcing, layout decisions, bring-up findings |
 | [Fabrication files](kicad/fab/FAB.md) | Gerber/drill files and PCB order parameters |
 | [Operation, diagnostics and flashing](docs/OPERATIONS.md) | Setup, OTA and serial flashing, diagnostics |
-| [ESPHome firmware](esphome/README.md) | Alternative firmware as an ESPHome external component |
+| [ESPHome firmware](esphome/README.md) | Recommended firmware: setup, entities, switching from/to the Arduino firmware |
 | [Changelog](CHANGELOG.md) | Firmware versions |
 
 All documents are also available in German (`*.de.md`).
@@ -32,23 +35,39 @@ All documents are also available in German (`*.de.md`).
   the [layout](kicad/board-layout.pdf). The fabricated rev. 0.2 boards work
   after a small modification at U3 (diodes + pull-downs, see
   [DESIGN.md](kicad/DESIGN.md)).
-- **Firmware:** 0.0.10, PlatformIO, source in [`src/main.cpp`](src/main.cpp).
-  Alternatively an [ESPHome firmware](esphome/README.md) for the same
-  hardware (not yet tested on the hood).
+- **Firmware:** the [ESPHome firmware](esphome/README.md) is the
+  recommended variant and runs on the author's hood since 2026-11-21. The
+  Arduino firmware 0.0.10 ([`src/main.cpp`](src/main.cpp)) stays available
+  for MQTT setups and as a fallback; both can be swapped over the air.
 
 ## Project layout
 
 ```
-src/main.cpp          firmware
-platformio.ini        build configuration (serial and OTA flashing)
+esphome/              ESPHome firmware (external component + YAML), recommended
+src/main.cpp          Arduino firmware (MQTT), fallback
+platformio.ini        build configuration of the Arduino firmware
 docs/                 operation and circuit description
 kicad/                schematic, PCB, custom footprint and 3D model
 kicad/fab/            fabrication files
 fritzing/             2017 perfboard version (reference only)
-esphome/              alternative ESPHome firmware (external component + YAML)
 ```
 
-## Building and flashing the firmware
+## ESPHome firmware (recommended)
+
+```bash
+cd esphome
+cp secrets.yaml.example secrets.yaml   # fill in
+esphome run hood-control.yaml
+```
+
+Details, entities and how to switch over from the Arduino firmware via OTA:
+[esphome/README.md](esphome/README.md).
+
+## Arduino firmware (MQTT, fallback)
+
+The sections below only apply to the Arduino firmware in `src/`.
+
+### Building and flashing
 
 ```bash
 pio run -e nodemcuv2-ota -t upload
@@ -58,7 +77,7 @@ This flashes over Wi-Fi (OTA) to `hood-control.local`. For the first flash
 or for recovery, use `-e nodemcuv2` via a USB-serial adapter on J2, with
 jumper J5 set to FLASH. Details in [OPERATIONS.md](docs/OPERATIONS.md).
 
-## MQTT
+### MQTT
 
 All topics live under the configured prefix (default `home/kitchen/hood`).
 Home Assistant picks the device up automatically via MQTT discovery
@@ -79,7 +98,7 @@ Diagnostics:
 - `events`: connection events buffered since the last MQTT contact
 - `$online`: availability via MQTT last will
 
-## Network
+### Network
 
 If the stored Wi-Fi network cannot be reached for 20 seconds, the firmware
 starts the password-protected hotspot `HoodControl-Setup`. The setup portal
